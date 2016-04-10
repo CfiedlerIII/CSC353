@@ -128,7 +128,7 @@ background-color:#4CAF50;
 		$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
 		mysql_select_db("jgavin", $linkID);
 		
-		$SQL = "INSERT INTO `jgavin`.`Players` (`Player_ID`, `Username`, `First_Name`, `Last_Name`, `Email_Address`, `password`) VALUES (NULL, '".$username."', '".$first."', '".$last."', '".$email."', '".$pass1."');";
+		$SQL = "INSERT INTO `jgavin`.`Players` (`Player_ID`, `Username`, `First_Name`, `Last_Name`, `Email_Address`, `password`,'Account_Balance','Admin','Confirmed') VALUES (NULL, '".$username."', '".$first."', '".$last."', '".$email."', '".$pass1."',0,0,0);";
 		
 		$allValues = mysql_query($SQL, $linkID);
 		if (mysql_affected_rows() == 0) {

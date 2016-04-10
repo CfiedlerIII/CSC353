@@ -108,6 +108,23 @@ background-color:#4CAF50;
 				
 			}
 		}
+		
+	$SQL = "SELECT Admin FROM Players
+	WHERE Player_ID = '".$_SESSION['uuid']."'";	
+	
+	$allValues = mysql_query($SQL, $linkID);
+	if (mysql_affected_rows() == 0) {
+		echo "Log in request not handled correctly. " . mysql_error();
+		exit;
+	}
+	
+	$totalrows = mysql_num_rows($allValues);
+		for ($i=1; $i <= $totalrows; $i++){
+			$thisValue = mysql_fetch_assoc($allValues);
+			extract($thisValue);
+			$adminStatus = $Admin;
+			$_SESSION['admin'] = $adminStatus;
+		}
 
 	mysql_close($linkID);
 ?>
