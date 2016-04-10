@@ -62,11 +62,15 @@ background-color:#4CAF50;
 </head>
 <body>
 
+<title>Blueprint</title>
+
 <ul>
 	<li><a class="active" href="index.php">Home</a></li>
   	<li><a href="marketplace.php">Marketplace</a></li>
   	<li><a href="portfolio.php">Portfolio</a></li>
-    <title>Blueprint</title>
+    <li><a href="signIn.php">Sign In</a></li>
+    <li><a href="signUp.php">Sign Up</a></li>
+    <li><a href="logOut.php">Log Out</a></li>
 </ul>
 
 
@@ -90,7 +94,7 @@ background-color:#4CAF50;
 		$searchTerm = "";
 	}
 	else{
-		$searchTerm=$_POST["searchTerm"];
+		$searchTerm=addSlashes($_POST["searchTerm"]);
 	}
 	$inputSort=$_POST["sort"];
 	$sort;
@@ -103,30 +107,48 @@ background-color:#4CAF50;
 	
 	$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
 	mysql_select_db("jgavin", $linkID);
-	if($searchTerm==""){
-		$SQL = "SELECT * FROM Transaction ORDER BY ".$sort;
-	}
-	else{
-		$SQL = "SELECT *  FROM Transaction WHERE Transaction_ID LIKE '%".$searchTerm."%' ORDER BY ".$sort;
-	}
+	//if($searchTerm==""){
+	//	$SQL = "SELECT * FROM Transaction ORDER BY ".$sort;
+	//}
+	//else{
+		//$SQL = "SELECT *  FROM Transaction WHERE Transaction_ID LIKE '%".$searchTerm."%' ORDER BY ".$sort;}
+		if($searchTerm==""){
+			$SQL = "SELECT t.Transaction_ID, t.Value, t.QuantitySold, te.Team_Name, 		 p.username as Buyer_ID, pl.username AS Seller_ID
+FROM Players p, Transaction t, Team te, Players pl
+Where p.player_ID = t.buyer_ID
+and te.Team_ID = t.Team_ID
+and pl.player_ID = t.seller_ID
+Order By ".$sort;
+		}
+		else{
+			$SQL = "SELECT t.Transaction_ID, t.Value, t.QuantitySold, te.Team_Name, p.username as Buyer_ID, pl.username AS Seller_ID
+FROM Players p, Transaction t, Team te, Players pl
+Where p.player_ID = t.buyer_ID
+and te.Team_ID = t.Team_ID
+and pl.player_ID = t.seller_ID
+and (Team_Name LIKE '%".$searchTerm."%' 
+or p.username LIKE '%".$searchTerm."%' 
+or pl.username LIKE '%".$searchTerm."%')
+Order By ".$sort;
+		}
 	$allValues = mysql_query($SQL, $linkID);
 	if (!$allValues) {
 		echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
 		exit;
 	}
 	echo "<TABLE BORDER=1 CELLPADDING=8>";
-	echo "<TR><TD><B>Transaction_ID</B></TD><TD><B>Team_ID</B></TD><TD><B>Buyer_ID</B></TD><TD><B>Seller_ID</B></TD><TD><B>Value</B></TD><TD><B>Quantity Sold</B></TD>";
+	echo "<TR><TD><B>Transaction_ID</B></TD><TD><B>Value</B></TD><TD><B>QuantitySold</B></TD><TD><B>Team_Name</B></TD><TD><B>Buyer_ID</B></TD><TD><B>Seller_ID</B></TD>";
 		$totalrows = mysql_num_rows($allValues);
 		for ($i=1; $i <= $totalrows; $i++){
 			$thisValue = mysql_fetch_assoc($allValues);
 			extract($thisValue);
 			echo "<TR>";
 			echo "<TD>$Transaction_ID</TD>";
-			echo "<TD>$Team_ID</TD>";
+			echo "<TD>\$$Value</TD>";
+			echo "<TD>$QuantitySold</TD>";
+			echo "<TD>$Team_Name</TD>";
 			echo "<TD>$Buyer_ID</TD>";
 			echo "<TD>$Seller_ID</TD>";
-			echo "<TD>$Value</TD>";
-			echo "<TD>$Quantity Sold</TD>";
 			echo "</TR>";
 		}
 		echo "</TABLE>";

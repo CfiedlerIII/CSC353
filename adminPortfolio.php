@@ -159,13 +159,6 @@ background-color:#4CAF50;
 		if (!$allValues) {
 			echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
 			exit;
-		}
-		
-		$SQL = "UPDATE Players_Team SET Pending = 'Pending' WHERE Player_ID = '".$userId."' AND Team_ID = (SELECT Team_ID FROM Team WHERE Team_Name = '".$teamSell."');";
-		$allValues = mysql_query($SQL, $linkID);
-		if (!$allValues) {
-			echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
-			exit;
 		}/*
 		if($sellAll){
 			$SQL = "DELETE FROM Players_Team WHERE Player_ID = '".$userID."' and
@@ -235,6 +228,77 @@ Order By ".$sort;
 
 	mysql_close($linkID);
 ?>
+<?php
+	session_start();
+	$playerName1 = "p";
+	$playerName2 = "q";
+	$same = false;
+	$userID = $_SESSION['uuid'];
+	//Don't forget to check for admin privleges first!
+	if($_POST["playerName1"] != ""){
+		$playerName1 = addSlashes($_POST["playerName1"]);
+	}
+	if($_POST["playerName2"] != ""){
+		$playerName2 = addSlashes($_POST["playerName2"]);
+	}
+	if($playerName1==$playerName2){
+		$same = true;
+	}
+	$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
+	mysql_select_db("jgavin", $linkID);
+	$SQL = "SELECT Username, First_Name, Last_Name, Email_Address FROM Players;";
+	$allValues = mysql_query($SQL, $linkID);
+	if (!$allValues) {
+		echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+		exit;
+	}
+	echo "<TABLE BORDER=1 CELLPADDING=8>";
+	echo "<TR><TD><B>Username</B></TD><TD><B>First_Name</B></TD><TD><B>Last_Name</B></TD><TD><B>Email_Address</B></TD>";
+		$totalrows = mysql_num_rows($allValues);
+		for ($i=1; $i <= $totalrows; $i++){
+			$thisValue = mysql_fetch_assoc($allValues);
+			extract($thisValue);
+			echo "<TR>";
+			echo "<TD>$Username</TD>";
+			echo "<TD>$First_Name</TD>";
+			echo "<TD>$Last_Name</TD>";
+			echo "<TD>$Email_Address</TD>";
+			echo "</TR>";
+		}
+		echo "</TABLE>";
+	
+	mysql_close($linkID);
+	if($same){
+		$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
+		mysql_select_db("jgavin", $linkID);
+		$SQL = "SELECT Player_ID FROM Players WHERE Username = '".$playername1."'";
+		$allValues = mysql_query($SQL, $linkID);
+		if (!$allValues) {
+			echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+			exit;
+		}
+		$thisValue = mysql_fetch_assoc($allValues);
+		extract($thisValue);
+		$removeID = $Player_ID;
+		
+		$SQL = "DELETE FROM Players WHERE Player_ID = '".$removeID."'";
+		
+		$allValues = mysql_query($SQL, $linkID);
+		if (!$allValues) {
+			echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+			exit;
+		}
+		mysql_close($linkID);
+	}
+?>
+<h3><font color=#0099cc>Remove a Player:</font></h3>
+    <form action="adminPortfolio.php" method="post">
+	<font color=#0099cc>Player to Remove:</font>
+    <input type="text" name="playerName1" maxlength="35" size="35">
+    <font color=#0099cc>Confirm Player:</font>
+    <input type="text" name="playerName2" maxlength="10" size="10">
+      <input type="submit" value="Remove Player">
+    </form>
 </div>
 
 
