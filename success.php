@@ -81,9 +81,33 @@ background-color:#4CAF50;
 	session_start();
 	$usernameInput = addSlashes($_POST["username"]);
 	$passwordInput = addSlashes($_POST["password"]);
+	$confirmedBool = false;
 	
 	$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
 	mysql_select_db("jgavin", $linkID);
+	
+	$SQL = "SELECT Confirmed FROM Players WHERE Username = '".$usernameInput."'";
+	$allValues = mysql_query($SQL, $linkID);
+	if (mysql_affected_rows() == 0) {
+		echo "Log in request not handled correctly. " . mysql_error();
+		exit;
+	}
+	
+	$totalrows = mysql_num_rows($allValues);
+		for ($i=1; $i <= $totalrows; $i++){
+			$thisValue = mysql_fetch_assoc($allValues);
+			extract($thisValue);
+			$confirmedPlayer = $Confirmed;
+			if($confirmedPlayer == 1){
+				$confirmedBool = true;
+				break;
+				
+			}
+		}
+		
+		if($confirmedBool){
+		
+		
 		
 	$SQL = "SELECT Player_ID, password
 		FROM Players
@@ -107,6 +131,29 @@ background-color:#4CAF50;
 				break;
 				
 			}
+		}
+		
+		
+	$SQL = "SELECT Admin FROM Players
+	WHERE Player_ID = '".$_SESSION['uuid']."'";	
+	
+	$allValues = mysql_query($SQL, $linkID);
+	if (mysql_affected_rows() == 0) {
+		echo "Log in request not handled correctly. " . mysql_error();
+		exit;
+	}
+	
+	$totalrows = mysql_num_rows($allValues);
+		for ($i=1; $i <= $totalrows; $i++){
+			$thisValue = mysql_fetch_assoc($allValues);
+			extract($thisValue);
+			$adminStatus = $Admin;
+			$_SESSION['admin'] = $adminStatus;
+		}
+		
+		}
+		else{
+			echo "Your account is awaiting confirmation.";
 		}
 
 	mysql_close($linkID);
