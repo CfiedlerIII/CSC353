@@ -82,7 +82,10 @@ background-color:#4CAF50;
 	$adminStatus = $_SESSION['admin'];
 	$playerName1 = "p";
 	$playerName2 = "q";
+	$playerName3 = "p";
+	$playerName4 = "q";
 	$same = false;
+	$same2 = false;
 	$userID = $_SESSION['uuid'];
 	//Don't forget to check for admin privleges first!
 	if($_POST["playerName1"] != ""){
@@ -95,17 +98,27 @@ background-color:#4CAF50;
 		$same = true;
 	}
 	
+	if($_POST["playerName3"] != ""){
+		$playerName3 = addSlashes($_POST["playerName3"]);
+	}
+	if($_POST["playerName4"] != ""){
+		$playerName4 = addSlashes($_POST["playerName4"]);
+	}
+	if($playerName3==$playerName4){
+		$same2 = true;
+	}
+	
 	if($adminStatus == '1'){
 		$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
 		mysql_select_db("jgavin", $linkID);
-		$SQL = "SELECT Username, First_Name, Last_Name, Email_Address FROM Players;";
+		$SQL = "SELECT Username, First_Name, Last_Name, Email_Address, Confirmed FROM Players;";
 		$allValues = mysql_query($SQL, $linkID);
 		if (!$allValues) {
 			echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
 			exit;
 		}
 		echo "<TABLE BORDER=1 CELLPADDING=8>";
-		echo "<TR><TD><B>Username</B></TD><TD><B>First_Name</B></TD><TD><B>Last_Name</B></TD>	<TD><B>Email_Address</B></TD>";
+		echo "<TR><TD><B>Username</B></TD><TD><B>First_Name</B></TD><TD><B>Last_Name</B></TD>	<TD><B>Email_Address</B></TD><TD><B>Confirmed</B></TD>";
 		$totalrows = mysql_num_rows($allValues);
 		for ($i=1; $i <= $totalrows; $i++){
 			$thisValue = mysql_fetch_assoc($allValues);
@@ -115,6 +128,7 @@ background-color:#4CAF50;
 			echo "<TD>$First_Name</TD>";
 			echo "<TD>$Last_Name</TD>";
 			echo "<TD>$Email_Address</TD>";
+			echo "<TD>$Confirmed</TD>";
 			echo "</TR>";
 		}
 		echo "</TABLE>";
@@ -141,6 +155,27 @@ background-color:#4CAF50;
 			}
 			mysql_close($linkID);
 		}
+		if($same2){
+			$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
+			mysql_select_db("jgavin", $linkID);
+			$SQL = "SELECT Player_ID FROM Players WHERE Username = '".$playerName3."'";
+			$allValues = mysql_query($SQL, $linkID);
+			if (!$allValues) {
+				echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+				exit;
+			}
+			$thisValue = mysql_fetch_assoc($allValues);
+			extract($thisValue);
+			$confirmID = $Player_ID;
+			$SQL = "UPDATE Players SET Confirmed = 1 WHERE Player_ID = '".$confirmID."'";
+		
+			$allValues = mysql_query($SQL, $linkID);
+			if (!$allValues) {
+				echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+				exit;
+			}
+			mysql_close($linkID);
+		}
 	}
 	
 ?>
@@ -151,6 +186,15 @@ background-color:#4CAF50;
     <font color=#0099cc>Confirm Player:</font>
     <input type="text" name="playerName2" maxlength="10" size="10">
       <input type="submit" value="Remove Player">
+    </form>
+    
+    <h3><font color=#0099cc>Confirm Player Registration:</font></h3>
+    <form action="adminPortfolio.php" method="post">
+	<font color=#0099cc>Player to Confirm:</font>
+    <input type="text" name="playerName3" maxlength="35" size="35">
+    <font color=#0099cc>Confirm Player:</font>
+    <input type="text" name="playerName4" maxlength="10" size="10">
+      <input type="submit" value="Confirm Player">
     </form>
 </div>
 
