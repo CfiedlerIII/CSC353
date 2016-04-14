@@ -92,16 +92,19 @@ background-color:#4CAF50;
     <form action="marketplace.php" method="post">
 	<font color=#0099cc>Team to Buy:</font>
     <input type="text" name="teamBuy" maxlength="35" size="35">
-    <font color=#0099cc>Seller to Buy From:</font>
-    <input type="text" name="seller" maxlength="35" size="35">
     <font color=#0099cc>Blueprints to Buy:</font>
     <input type="text" name="numBuy" maxlength="10" size="10">
+    <font color=#0099cc>Maximum Price:</font>
+    <input type="text" name="price" maxlength="10" size="10">
       <input type="submit" value="Buy Blueprints">
     </form>
 <?php
 	session_start();
 	$inputPart;
 	$searchTerm;
+	$teamBuy;
+	$numBuy;
+	$maxPrice;
 	$checks = 0;
 	$userID = $_SESSION['uuid'];
 	if($_POST["searchTerm"] == ""){
@@ -121,6 +124,7 @@ background-color:#4CAF50;
 	else{
 		$sort = "Price";
 	}
+	
 	if($_POST["teamBuy"] == ""){
 		$teamBuy = "";
 	}
@@ -136,10 +140,10 @@ background-color:#4CAF50;
 		$checks++;
 	}
 	if($_POST["price"] == ""){
-		$price = "";
+		$maxPrice = "";
 	}
 	else{
-		$price=addSlashes($_POST["price"]);
+		$maxPrice=addSlashes($_POST["price"]);
 		$checks++;
 	}
 	
@@ -168,20 +172,17 @@ background-color:#4CAF50;
 		}
 		$totalrows = mysql_num_rows($allValues);
 		$leaveForLoop = false;
-		$teamBuy;
-		$numBuy;
-		$maxPrice;
 		$sharesAquired = 0;
-		$sharesStillWanted;
+		$sharesStillWanted = $numBuy;
 		for ($i=1; $i <= $totalrows; $i++){
 			$thisValue = mysql_fetch_assoc($allValues);
 			extract($thisValue);
 			$Amount_Selling;
 			$Price;
 			$Seller_ID;
-			$sharesStillWanted = $numBuy - $sharesAquired;
 			if($sharesStillWanted>0){
 				if($Price<=$maxPrice){
+					$sharesStillWanted = $numBuy - $sharesAquired;
 					//aquire the current balances of the buyer and seller
 					$SQL = "SELECT Account_Balance FROM Players WHERE Player_ID = '$Seller_ID'";
 					$allValues = mysql_query($SQL, $linkID);
@@ -206,18 +207,21 @@ background-color:#4CAF50;
 					//if the buyer can afford all wanted shares
 					$numSharesBuying = 0;
 					$buyerTestBal = $buyerInitBal;
-					for($i=0;$i<s$haresStillWanted,$i++){
+					for($i=0;$i<$sharesStillWanted;$i++){
 						$buyerTestBal = $buyerTestBal - $Price;
 						if($buyerTestBal>0){
 							$numSharesBuying++;
 						}
 					}
+					
+					
+					
 					$sellingSharesLeft = $Amount_Selling - $numSharesBuying;
 
 					//remove shares from the seller's inventory
 					if($Amount_Selling>$numSharesBuying){
-						$SQL = "UPDATE Players_Team SET Amount_Selling = '$sellingSharesLeft' 
-						WHERE Seller_ID = '$Seller_ID'";
+						$SQL = "UPDATE Blueprints_ForSale SET Amount_Selling = '$sellingSharesLeft' 
+						WHERE Seller_ID = '$Seller_ID' AND Team_ID = ".$teamBuy;
 						$allValues = mysql_query($SQL, $linkID);
 						if (!$allValues) {
 							echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
@@ -225,7 +229,39 @@ background-color:#4CAF50;
 						}
 					}
 					else{
+						$SQL = "DELETE FROM Blueprints_ForSale
+						WHERE Seller_ID = '$Seller_ID' AND Team_ID = '$teamBuy'";
+						$allValues = mysql_query($SQL, $linkID);
+						if (!$allValues) {
+							echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+							exit;
+						}
+						$numSharesBuying = $Amount_Selling;
+					}
+					
+					//get amount owned by seller
+					$SQL = "SELECT NumOfBlueprints FROM Players_Team 
+					WHERE Team_ID = ".$teamBuy." AND Player_ID = ".$Seller_ID;
+					$allValues = mysql_query($SQL, $linkID);
+					if (!$allValues) {
+						echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+						exit;
+					}
+					$thisValue = mysql_fetch_assoc($allValues);
+					extract($thisValue);
+					$finalNumSeller = $NumOfBlueprints - $numSharesBuying;
+					
+					if($finalNumSeller==0){
 						$SQL = "DELETE FROM Players_Team
+						WHERE Player_ID = '$Seller_ID' AND Team_ID = '$teamBuy'";
+						$allValues = mysql_query($SQL, $linkID);
+						if (!$allValues) {
+							echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+							exit;
+						}
+					}
+					else{
+						$SQL = "UPDATE Players_Team SET NumOfBlueprints = '$finalNumSeller' 
 						WHERE Player_ID = '$Seller_ID' AND Team_ID = '$teamBuy'";
 						$allValues = mysql_query($SQL, $linkID);
 						if (!$allValues) {
@@ -244,15 +280,20 @@ background-color:#4CAF50;
 						exit;
 					}
 					$thisValue = mysql_fetch_assoc($allValues);
-					extract($thisValue);
-					$buyerInitShares = $NumOfBlueprints;
+					if(empty($thisValue)){
+						$buyerInitShares = 0;
+					}
+					else{
+						extract($thisValue);
+						$buyerInitShares = $NumOfBlueprints;
+					}
 					$buyerFinalShares = $buyerInitShares + $numSharesBuying;
 
 					//add the purchased shares to the buyer's inventory
 					if($buyerInitShares==0){
 						$SQL = "INSERT INTO Players_Team 
 						(NumOfBlueprints,Player_ID,Team_ID,Pending)
-						VALUES('$numSharesBuying','$userID','$teamBuy',null)";
+						VALUES('$numSharesBuying','$userID','$teamBuy','')";
 						$allValues = mysql_query($SQL, $linkID);
 						if (!$allValues) {
 							echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
@@ -269,20 +310,32 @@ background-color:#4CAF50;
 							exit;
 						}
 					}
-
+					
+					
+					
 					//update both account balances and update transaction table
 					$sellerFinalBal = $sellerInitBal + ($Price * $numSharesBuying);
 					$buyerFinalBal = $buyerInitBal - ($Price * $numSharesBuying);
 
 					$SQL = "UPDATE Players 
-					SET Account_Balance = '$sellerFinalBal'
-					WHERE Player_ID = '$Seller_ID';
-					UPDATE Players 
-					SET Account_Balance = '$buyerFinalBal'
-					WHERE Player_ID = '$userID';
-					INSERT INTO Transaction
+					SET Account_Balance = ".$sellerFinalBal."
+					WHERE Player_ID = ".$Seller_ID;
+					$allValues = mysql_query($SQL, $linkID);
+					if (!$allValues) {
+						echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+						exit;
+					}
+					$SQL = "UPDATE Players 
+					SET Account_Balance = ".$buyerFinalBal."
+					WHERE Player_ID = ".$userID;
+					$allValues = mysql_query($SQL, $linkID);
+					if (!$allValues) {
+						echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+						exit;
+					}
+					$SQL = "INSERT INTO Transaction
 					(Transaction_ID,Value,QuantitySold,Team_ID,Buyer_ID,Seller_ID)
-					VALUES(null,'$Price','$numSharesBuying','$teamBuy','$userID','$Seller_ID');";
+					VALUES(null,".$Price.",".$numSharesBuying.",".$teamBuy.",".$userID.",".$Seller_ID.")";
 					$allValues = mysql_query($SQL, $linkID);
 					if (!$allValues) {
 						echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
@@ -299,10 +352,12 @@ background-color:#4CAF50;
 				break;
 			}
 		}
+		$sharesStillWanted = $numBuy - $sharesAquired;
+
 		//if you still want to buy more shares
 		if($sharesStillWanted>0){
 			$SQL = "INSERT INTO BlueprintsToBuy
-			(buyID,buyerID,Price,AmountBuying,Team_ID)
+			(buyID,buyerID,Price,Amount_Buying,Team_ID)
 			VALUES(null,'$userID','$maxPrice','$sharesStillWanted','$teamBuy')";
 			$allValues = mysql_query($SQL, $linkID);
 			if (!$allValues) {
@@ -344,6 +399,46 @@ background-color:#4CAF50;
 		}
 		echo "</TABLE>";
 	mysql_close($linkID);
+?>
+
+<h3><font color=#0099cc>Purchase Request:</font></h3>
+  <form action="marketplace.php" method="post">
+  <font color=#0099cc>Team to Sell:</font>
+  <input type="text" name="teamSell" maxlength="35" size="35">
+  <font color=#0099cc>Price to Sell for:</font>
+  <input type="text" name="amountSell" maxlength="35" size="35">
+  <font color=#0099cc>Blueprints to Sell:</font>
+  <input type="text" name="numSell" maxlength="10" size="10">
+    <input type="submit" value="Sell Blueprints">
+  </form>
+<?php
+	$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
+	mysql_select_db("jgavin", $linkID);
+	
+		$SQL = "SELECT te.Team_Name, bb.Amount_Buying, bb.Price, p.username AS Buyer_ID
+		FROM Players p, Team te, BlueprintsToBuy bb
+		Where p.Player_ID = bb.buyerID and te.Team_ID = bb.Team_ID";
+	$allValues = mysql_query($SQL, $linkID);
+	if (!$allValues) {
+		echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+		exit;
+	}
+  echo "<TABLE BORDER=1 CELLPADDING=8>";
+	echo "<TR><TD><B>Team_Name</B></TD><TD><B>Amount_Buying</B></TD><TD><B>Price</B></TD><TD><B>buyerID</B></TD>";
+		$totalrows = mysql_num_rows($allValues);
+		for ($i=1; $i <= $totalrows; $i++){
+			$thisValue = mysql_fetch_assoc($allValues);
+			extract($thisValue);
+			echo "<TR>";
+			echo "<TD>$Team_Name</TD>";
+			echo "<TD>$Amount_Buying</TD>";
+			echo "<TD>\$$Price</TD>";
+			echo "<TD>$Buyer_ID</TD>";
+			echo "</TR>";
+		}
+		echo "</TABLE>";
+		
+		mysql_close($linkID);
 ?>
 </div>
 
