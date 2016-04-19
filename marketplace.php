@@ -208,7 +208,7 @@ background-color:#4CAF50;
 					$numSharesBuying = 0;
 					$buyerTestBal = $buyerInitBal;
 					for($i=0;$i<$sharesStillWanted;$i++){
-						$buyerTestBal = $buyerTestBal - $Price;
+						$buyerTestBal = $buyerTestBal - $maxPrice;
 						if($buyerTestBal>0){
 							$numSharesBuying++;
 						}
