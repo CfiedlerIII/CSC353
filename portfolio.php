@@ -71,6 +71,7 @@ background-color:#4CAF50;
     <li><a href="signIn.php">Sign In</a></li>
     <li><a href="signUp.php">Sign Up</a></li>
     <li><a href="logOut.php">Log Out</a></li>
+    <li><a href="league.php">League Admin</a></li>
     </ul>
     
 
@@ -89,15 +90,7 @@ background-color:#4CAF50;
     </form>
     
     <h3><font color=#0099cc>Blueprints to sell:</font></h3>
-    <form action="portfolio.php" method="post">
-	<font color=#0099cc>Team to Sell:</font>
-    <input type="text" name="teamSell" maxlength="35" size="35">
-    <font color=#0099cc>Blueprints to Sell:</font>
-    <input type="text" name="numSell" maxlength="10" size="10">
-     <font color=#0099cc>Price/Blueprint:</font>
-    <input type="text" name="prices" maxlength="10" size="10">
-      <input type="submit" value="Sell Blueprints">
-    </form>
+    
 <?php
 	session_start();
 	$inputPart;
@@ -137,101 +130,101 @@ background-color:#4CAF50;
 		echo "Please sign in to view your personal Blueprints.";
 	}
 	else{
-		
-		if($teamSell != "" and $numSell != "" and $prices != ""){
-		$SQL = "SELECT NumOfBlueprints FROM Players_Team WHERE Player_ID = '".$userID."' and
-		Team_ID = (SELECT Team_ID FROM Team WHERE Team_Name = '".$teamSell."')";
+		$SQL = "SELECT Team_ID FROM Players_Team 
+		WHERE Player_ID = ".$userID;
 		$allValues = mysql_query($SQL, $linkID);
 		if (!$allValues) {
 			echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
 			exit;
 		}
-		$thisValue = mysql_fetch_assoc($allValues);
-		extract($thisValue);
-		$numBlueprints = $NumOfBlueprints;
-		if($numBlueprints <= $numSell){
-			$sellAll = true;
-			$numSell = $numBlueprints;
+		$totalrowsOverall = mysql_num_rows($allValues);
+		$teamNameArray[$totalrowsOverall];
+		for($i = 0;$i<$totalrowsOverall;$i++){
+			$thisValue = mysql_fetch_assoc($allValues);
+			extract($thisValue);
+			$SQL = "SELECT Team_Name FROM Team WHERE Team_ID = ".$Team_ID;
+			$allValues2 = mysql_query($SQL, $linkID);
+			if (!$allValues2) {
+				echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+				exit;
+			}
+			$thisValue2 = mysql_fetch_assoc($allValues2);
+			extract($thisValue2);
+			$teamNameArray[$i] = $Team_Name;
 		}
 		
-		$SQL = "INSERT INTO Blueprints_ForSale (forSale_ID, Seller_ID, Price, Amount_Selling, Team_ID) VALUES(null, '".$userID."', '".$prices."', '".$numSell."', (SELECT Team_ID FROM Team WHERE Team_Name = '".$teamSell."'))";
-		$allValues = mysql_query($SQL, $linkID);
-		if (!$allValues) {
-			echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
-			exit;
-		}
 		
-		$SQL = "UPDATE Players_Team SET Pending = 'Pending' WHERE Player_ID = '".$userId."' AND Team_ID = (SELECT Team_ID FROM Team WHERE Team_Name = '".$teamSell."');";
-		$allValues = mysql_query($SQL, $linkID);
-		if (!$allValues) {
-			echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
-			exit;
-		}/*
-		if($sellAll){
-			$SQL = "DELETE FROM Players_Team WHERE Player_ID = '".$userID."' and
-		Team_ID = (SELECT Team_ID FROM Team WHERE Team_Name = '".$teamSell."')";
-		}
-		else{
-			$difference = $numBlueprints - $numSell;
-			$SQL = "UPDATE Players_Team SET NumOfBlueprints = '".$difference."' WHERE Player_ID = '".$userID."' and Team_ID = (SELECT Team_ID FROM Team WHERE Team_Name = '".$teamSell."')";
-		}*/
+		$select= '<form action="portfolio.php" method="post">
+		<label for="teamSell"><font color=#0099cc>Team To Sell:</font></label>
+		<select name="teamSell" id="teamSell" title="teamSell">';
+		for($i = 0;$i<$totalrowsOverall;$i++){
+      		$select.='<option value="'.$teamNameArray[$i].'">'.$teamNameArray[$i].'
+			</option>';
+ 		}
+		$select.='</select>
+		<font color=#0099cc>Blueprints to Sell:</font>
+    	<input type="text" name="numSell" maxlength="10" size="10">
+     	<font color=#0099cc>Price/Blueprint:</font>
+    	<input type="text" name="prices" maxlength="10" size="10">
+      	<input type="submit" value="Sell Blueprints">
+    	</form>';
+		echo $select;
 	}
 		
-		
-		
-		
-		
-		$SQL = "SELECT Account_Balance FROM Players WHERE Player_ID = ".$userID;
-		$allValues = mysql_query($SQL, $linkID);
+	$SQL = "SELECT Account_Balance FROM Players WHERE Player_ID = ".$userID;
+	$allValues = mysql_query($SQL, $linkID);
 	if (!$allValues) {
 		echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
 		exit;
 	}
 	echo "<TABLE BORDER=1 CELLPADDING=8>";
 	echo "<TR><TD><B>Current_Balance</B></TD>";
-		$thisValue = mysql_fetch_assoc($allValues);
-		extract($thisValue);
-		echo "<TR>";
-		echo "<TD>\$$Account_Balance</TD>";
-		echo "</TR>";
-		echo "</TABLE>";
-		
-		
-		if($searchTerm==""){
-		$SQL = "SELECT t.Team_Name as Team_Name, 	(t.IPO_Value/t.NumOfTotBlueprints)*pt.NumOfBlueprints as Value_Owned, pt.NumOfBlueprints as Num_Owned, pt.Pending
-FROM Team t, Players_Team pt
-Where pt.Team_ID = t.Team_ID
-AND pt.Player_ID = ".$userID."
-Order By ".$sort;
-		}
-		else{
-			$SQL = "SELECT t.Team_Name as Team_Name, 	(t.IPO_Value/t.NumOfTotBlueprints)*pt.NumOfBlueprints as Value_Owned, pt.NumOfBlueprints as Num_Owned, pt.Pending
-FROM Team t, Players_Team pt
-Where pt.Team_ID = t.Team_ID
-AND pt.Player_ID = ".$userID."
-AND Team_Name LIKE '%".$searchTerm."%'
-Order By ".$sort;
-		}
-		$allValues = mysql_query($SQL, $linkID);
+	$thisValue = mysql_fetch_assoc($allValues);
+	extract($thisValue);
+	echo "<TR>";
+	echo "<TD>\$$Account_Balance</TD>";
+	echo "</TR>";
+	echo "</TABLE>";
+			
+	if($searchTerm==""){
+		$SQL = "SELECT t.Team_Name as Team_Name, 	
+		(t.IPO_Value/t.NumOfTotBlueprints)*pt.NumOfBlueprints as Value_Owned, 
+		pt.NumOfBlueprints as Num_Owned, pt.Pending
+		FROM Team t, Players_Team pt
+		Where pt.Team_ID = t.Team_ID
+		AND pt.Player_ID = ".$userID."
+		Order By ".$sort;
+	}
+	else{
+		$SQL = "SELECT t.Team_Name as Team_Name, 		 
+		(t.IPO_Value/t.NumOfTotBlueprints)*pt.NumOfBlueprints as Value_Owned, 	
+		pt.NumOfBlueprints as Num_Owned, pt.Pending
+		FROM Team t, Players_Team pt
+		Where pt.Team_ID = t.Team_ID
+		AND pt.Player_ID = ".$userID."
+		AND Team_Name LIKE '%".$searchTerm."%'
+		Order By ".$sort;
+	}
+	$allValues = mysql_query($SQL, $linkID);
 	if (!$allValues) {
 		echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
 		exit;
 	}
 	echo "<TABLE BORDER=1 CELLPADDING=8>";
-	echo "<TR><TD><B>Team_name</B></TD><TD><B>Value_Owned</B></TD><TD><B>Num_Owned</B></TD><TD><B>Notes</B></TD>";
-		$totalrows = mysql_num_rows($allValues);
-		for ($i=1; $i <= $totalrows; $i++){
-			$thisValue = mysql_fetch_assoc($allValues);
-			extract($thisValue);
-			echo "<TR>";
-			echo "<TD>$Team_Name</TD>";
-			echo "<TD>\$$Value_Owned</TD>";
-			echo "<TD>$Num_Owned</TD>";
-			echo "<TD>$Pending</TD>";
-			echo "</TR>";
-		}
-		echo "</TABLE>";
+	echo "<TR><TD><B>Team_name</B></TD><TD><B>Value_Owned</B></TD><TD><B>Num_Owned</B></TD>
+	<TD><B>Notes</B></TD>";
+	$totalrows = mysql_num_rows($allValues);
+	for ($i=1; $i <= $totalrows; $i++){
+		$thisValue = mysql_fetch_assoc($allValues);
+		extract($thisValue);
+		echo "<TR>";
+		echo "<TD>$Team_Name</TD>";
+		echo "<TD>\$$Value_Owned</TD>";
+		echo "<TD>$Num_Owned</TD>";
+		echo "<TD>$Pending</TD>";
+		echo "</TR>";
 	}
+	echo "</TABLE>";
 
 	mysql_close($linkID);
 ?>

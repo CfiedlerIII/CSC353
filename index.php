@@ -71,6 +71,7 @@ background-color:#4CAF50;
     <li><a href="signIn.php">Sign In</a></li>
     <li><a href="signUp.php">Sign Up</a></li>
     <li><a href="logOut.php">Log Out</a></li>
+    <li><a href="league.php">League Admin</a></li>
 </ul>
 
 
