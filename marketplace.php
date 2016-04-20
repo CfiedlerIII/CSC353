@@ -143,33 +143,20 @@ background-color:#4CAF50;
 	mysql_select_db("jgavin", $linkID);
 
 
-	$SQL = "SELECT UNIQUE Team_ID FROM Blueprints_ForSale";
+	$SQL = "SELECT Team_Name FROM Team";
 	$allValues = mysql_query($SQL, $linkID);
 	if (!$allValues) {
 		echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
 		exit;
 	}
-	$totalrowsOverall = mysql_num_rows($allValues);
-	$teamNameArray[$totalrowsOverall];
-	for($i = 0;$i<$totalrowsOverall;$i++){
-		$thisValue = mysql_fetch_assoc($allValues);
-		extract($thisValue);
-		$SQL = "SELECT Team_Name FROM Team WHERE Team_ID = ".$Team_ID;
-		$allValues2 = mysql_query($SQL, $linkID);
-		if (!$allValues2) {
-			echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
-			exit;
-		}
-		$thisValue2 = mysql_fetch_assoc($allValues2);
-		extract($thisValue2);
-		$teamNameArray[$i] = $Team_Name;
-	}
-			
+	$totalrowsOverall = mysql_num_rows($allValues);	
 	$select= '<form action="marketplace.php" method="post">
 	<label for="teamBuy"><font color=#0099cc>Team To Purchase:</font></label>
 	<select name="teamBuy" id="teamBuy" title="teamBuy">';
 	for($i = 0;$i<$totalrowsOverall;$i++){
-    	$select.='<option value="'.$teamNameArray[$i].'">'.$teamNameArray[$i].'
+		$thisValue = mysql_fetch_assoc($allValues);
+		extract($thisValue);
+    	$select.='<option value="'.$Team_Name.'">'.$Team_Name.'
 		</option>';
  	}
 	$select.='</select>

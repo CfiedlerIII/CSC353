@@ -111,6 +111,8 @@ background-color:#4CAF50;
 	
 	if($adminStatus == '1'){
 		winnerLooserForm();
+		setIPOForm();
+		possSetIPO();
 		displayUsers();
 		possUpdateIPO();
 	}
@@ -123,7 +125,7 @@ background-color:#4CAF50;
 		
 ?>
 <h3><font color=#0099cc>Remove a Player:</font></h3>
-    <form action="adminPortfolio.php" method="post">
+    <form action="league.php" method="post">
 	<font color=#0099cc>Player to Remove:</font>
     <input type="text" name="playerName1" maxlength="35" size="35">
     <font color=#0099cc>Repeat Player Username:</font>
@@ -132,7 +134,7 @@ background-color:#4CAF50;
     </form>
     
     <h3><font color=#0099cc>Confirm Player Registration:</font></h3>
-    <form action="adminPortfolio.php" method="post">
+    <form action="league.php" method="post">
 	<font color=#0099cc>Player to Confirm:</font>
     <input type="text" name="playerName3" maxlength="35" size="35">
     <font color=#0099cc>Repeat Player Username:</font>
@@ -255,6 +257,7 @@ background-color:#4CAF50;
     	</form>';
 		$totalForm = $select.$select2;
 		echo $totalForm;
+		mysql_close($linkID);
 	}
 	
 	function possUpdateIPO(){
@@ -286,18 +289,64 @@ background-color:#4CAF50;
 			$newWValue = $IPO_Value;
 			$newWValue = $newWValue + $deltaValue;
 			
-			$SQL = "UPDATE Team SET IPO_Value = ".$newLValue." WHERE Team_Name = '".$lTeam."'";
+			$SQL = "UPDATE Team SET IPO_Value = ".$newLValue." WHERE Team_Name = '".$lTeam.
+			"'";
 			$allValues = mysql_query($SQL, $linkID);
 			if (!$allValues) {
 				echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
 				exit;
 			}
-			$SQL = "UPDATE Team SET IPO_Value = ".$newWValue." WHERE Team_Name = '".$wTeam."'";
+			$SQL = "UPDATE Team SET IPO_Value = ".$newWValue." WHERE Team_Name = '".$wTeam.
+			"'";
 			$allValues = mysql_query($SQL, $linkID);
 			if (!$allValues) {
 				echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
 				exit;
 			}
+			mysql_close($linkID);
+		}
+	}
+	
+	function setIPOForm(){
+		$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
+		mysql_select_db("jgavin", $linkID);
+		$SQL = "SELECT Team_Name FROM Team;";
+		$allValues = mysql_query($SQL, $linkID);
+		if (!$allValues) {
+			echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+			exit;
+		}
+		$totalrows = mysql_num_rows($allValues);
+		$select= '<form action="league.php" method="post">
+		<label for="teamIPO"><font color=#0099cc>Team Set IPO:</font></label>
+		<select name="teamIPO" id="teamIPO" title="teamIPO">';
+		for($i = 1;$i<=$totalrows;$i++){
+			$thisValue = mysql_fetch_assoc($allValues);
+			extract($thisValue);
+      		$select.='<option value="'.$Team_Name.'">'.$Team_Name.'</option>';
+ 		}
+		$select.='</select>
+		<font color=#0099cc>Player to Confirm:</font>
+    	<input type="text" name="newIPO" maxlength="7" size="7">
+		<input type="submit" value="Set IPO">
+    	</form>';
+		echo $select;
+		mysql_close($linkID);
+	}
+	
+	function possSetIPO(){
+		$team = ''.$_POST["teamIPO"];
+		$newIPO = $_POST["newIPO"];
+		if($team!='' && $newIPO>=0){
+			$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
+			mysql_select_db("jgavin", $linkID);
+			$SQL = "UPDATE Team SET IPO_Value = ".$newIPO." WHERE Team_Name = '".$team."'";
+			$allValues = mysql_query($SQL, $linkID);
+			if (!$allValues) {
+				echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+				exit;
+			}
+			mysql_close($linkID);
 		}
 	}
 ?>
