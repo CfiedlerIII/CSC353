@@ -90,15 +90,6 @@ background-color:#4CAF50;
     </form>
     
     <h3><font color=#0099cc>Blueprints to purchase:</font></h3>
-    <form action="marketplace.php" method="post">
-	<font color=#0099cc>Team to Buy:</font>
-    <input type="text" name="teamBuy" maxlength="35" size="35">
-    <font color=#0099cc>Blueprints to Buy:</font>
-    <input type="text" name="numBuy" maxlength="10" size="10">
-    <font color=#0099cc>Maximum Price:</font>
-    <input type="text" name="price" maxlength="10" size="10">
-      <input type="submit" value="Buy Blueprints">
-    </form>
 <?php
 	session_start();
 	$inputPart;
@@ -150,6 +141,46 @@ background-color:#4CAF50;
 	
 	$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
 	mysql_select_db("jgavin", $linkID);
+
+
+	$SQL = "SELECT UNIQUE Team_ID FROM Blueprints_ForSale";
+	$allValues = mysql_query($SQL, $linkID);
+	if (!$allValues) {
+		echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+		exit;
+	}
+	$totalrowsOverall = mysql_num_rows($allValues);
+	$teamNameArray[$totalrowsOverall];
+	for($i = 0;$i<$totalrowsOverall;$i++){
+		$thisValue = mysql_fetch_assoc($allValues);
+		extract($thisValue);
+		$SQL = "SELECT Team_Name FROM Team WHERE Team_ID = ".$Team_ID;
+		$allValues2 = mysql_query($SQL, $linkID);
+		if (!$allValues2) {
+			echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+			exit;
+		}
+		$thisValue2 = mysql_fetch_assoc($allValues2);
+		extract($thisValue2);
+		$teamNameArray[$i] = $Team_Name;
+	}
+			
+	$select= '<form action="marketplace.php" method="post">
+	<label for="teamBuy"><font color=#0099cc>Team To Purchase:</font></label>
+	<select name="teamBuy" id="teamBuy" title="teamBuy">';
+	for($i = 0;$i<$totalrowsOverall;$i++){
+    	$select.='<option value="'.$teamNameArray[$i].'">'.$teamNameArray[$i].'
+		</option>';
+ 	}
+	$select.='</select>
+	<font color=#0099cc>Number to Purchase:</font>
+    <input type="text" name="numBuy" maxlength="10" size="10">
+    <font color=#0099cc>Price/Blueprint:</font>
+    <input type="text" name="prices" maxlength="10" size="10">
+    <input type="submit" value="Purchase Blueprints">
+    </form>';
+	echo $select;
+
 	
 	if($checks==3 && $userID!=null){
 		//get the Team_ID instead of the Team_Name
@@ -230,6 +261,7 @@ background-color:#4CAF50;
 						}
 					}
 					else{
+						//remove the blueprints from the seller's portfolio
 						$SQL = "DELETE FROM Blueprints_ForSale
 						WHERE Seller_ID = '$Seller_ID' AND Team_ID = '$teamBuy'";
 						$allValues = mysql_query($SQL, $linkID);
@@ -238,6 +270,15 @@ background-color:#4CAF50;
 							exit;
 						}
 						$numSharesBuying = $Amount_Selling;
+
+						//remove pending marker from seller's portfolio
+						$SQL = "UPDATE Players_Team SET Pending = '' 
+						WHERE Team_ID = '$teamBuy' AND Player_ID = '$sellerID'";
+						$allValues = mysql_query($SQL, $linkID);
+						if (!$allValues) {
+							echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+							exit;
+						}
 					}
 					
 					//get amount owned by seller
