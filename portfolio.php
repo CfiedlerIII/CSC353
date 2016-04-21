@@ -99,16 +99,23 @@ background-color:#4CAF50;
 	$numSell;
 	$prices;
 	$removePending;
+	$checks = 0;
 	$sellAll = false;
 	$userID = $_SESSION['uuid'];
 	if($_POST["teamSell"] != ""){
-		$teamSell = addSlashes($_POST["teamSell"]);
+		$teamSell = $_POST["teamSell"];
+		$checks++;
 	}
 	if($_POST["numSell"] != ""){
 		$numSell = addSlashes($_POST["numSell"]);
+		$checks++;
 	}
-	if($_POST["prices"] != ""){
-		$prices = addSlashes($_POST["prices"]);
+	if($_POST["price"] != ""){
+		$price = addSlashes($_POST["price"]);
+		$checks++;
+	}
+	if($checks==3){
+		sellShares($teamSell,$numSell,$price,$userID);
 	}
 	if($_POST["searchTerm"] == ""){
 		$searchTerm = "";
@@ -170,7 +177,7 @@ background-color:#4CAF50;
 		<font color=#0099cc>Blueprints to Sell:</font>
     	<input type="text" name="numSell" maxlength="10" size="10">
      	<font color=#0099cc>Price/Blueprint:</font>
-    	<input type="text" name="prices" maxlength="10" size="10">
+    	<input type="text" name="price" maxlength="10" size="10">
       	<input type="submit" value="Sell Blueprints">
     	</form>';
 		echo $select;
@@ -252,7 +259,7 @@ background-color:#4CAF50;
 		exit;
 	}
 	echo "<TABLE BORDER=1 CELLPADDING=8>";
-	echo "<TR><TD><B>Team_name</B></TD><TD><B>Book_Value</B></TD><TD><B>Market_Value</B></TD><TD><B>
+	echo "<TR><TD><B>Team_name</B></TD><TD><B>Book_Value</B></TD><TD><B>
 	Num_Owned</B></TD>
 	<TD><B>Notes</B></TD>";
 	$totalrows = mysql_num_rows($allValues);
@@ -262,7 +269,6 @@ background-color:#4CAF50;
 		echo "<TR>";
 		echo "<TD>$Team_Name</TD>";
 		echo "<TD>\$$Book_Value</TD>";
-		echo "<TD>\$$Market_Value</TD>";
 		echo "<TD>$Num_Owned</TD>";
 		echo "<TD>$Pending</TD>";
 		echo "</TR>";
@@ -290,6 +296,212 @@ background-color:#4CAF50;
 			echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
 			exit;
 		}
+		mysql_close($linkID);
+	}
+	
+	function sellShares($teamSell,$numSell,$price,$userID){
+		$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
+		mysql_select_db("jgavin", $linkID);
+		
+		$SQL = "SELECT Account_Balance FROM Players WHERE Player_ID = '$userID'";
+		$allValues = mysql_query($SQL, $linkID);
+		if (!$allValues) {
+			echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+			exit;
+		}
+		$thisValue = mysql_fetch_assoc($allValues);
+		extract($thisValue);
+		$userBalance = $Account_Balance;
+		
+		//get the Team_ID instead of the Team_Name
+		$SQL = "SELECT Team_ID FROM Team WHERE Team_Name = '$teamSell'";
+		$allValues = mysql_query($SQL, $linkID);
+		if (!$allValues) {
+			echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+			exit;
+		}
+		$thisValue = mysql_fetch_assoc($allValues);
+		extract($thisValue);
+		$teamSell = $Team_ID;
+		
+		$SQL = "SELECT Price,Amount_Buying,buyerID FROM BlueprintsToBuy
+		WHERE Team_ID = '$teamSell'
+		ORDER BY Price DESC";
+		$allValues = mysql_query($SQL, $linkID);
+		if (!$allValues) {
+			echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+			exit;
+		}
+		$thisValue = mysql_fetch_assoc($allValues);
+		if(empty($thisValue)){
+			$SQL = "INSERT INTO Blueprints_ForSale (forSale_ID,Seller_ID,Price,Amount_Selling,Team_ID) VALUES(,'$userID','$price','$numSell','$teamSell')";
+			$allValues = mysql_query($SQL, $linkID);
+			if (!$allValues) {
+				echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+				exit;
+			}
+			$SQL = "UPDATE Players_Team SET Pending = 'Pending'
+			WHERE Team_ID = '$teamSell' AND Player_ID = '$userID'";
+			$allValues = mysql_query($SQL, $linkID);
+			if (!$allValues) {
+				echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+				exit;
+			}
+		}
+		else{
+			
+			$SQL = "SELECT Account_Balance FROM Players WHERE Player_ID = '$userID'";
+			$allValues = mysql_query($SQL, $linkID);
+			if (!$allValues2) {
+				echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+				exit;
+			}
+			$thisValue2 = mysql_fetch_assoc($allValues2);
+			extract($thisValu2e);
+			$buyerBalance = $Account_Balance;
+			
+			
+			$totalrows = mysql_num_rows($allValues);
+			$sharesleft2Sell = $numSell;
+			for($i=0;$i<$totalrows;$i++){
+				extract($thisValue);
+				if($Price<$price){
+					break;
+				}
+				if($sharesleft2Sell==0){
+					break;
+				}
+				if($Amount_Buying>$sharesleft2Sell){
+					$deltaNum = $Amount_Buying - $numSell;
+					$deltaMonies = $numSell*$Price;
+					$userBalance = $userBalance + $deltaMonies;
+					$buyerBalance = $buyerBalance + $deltaMonies;
+					$SQL = "UPDATE BlueprintsToBuy SET Amount_Buying = '$deltaNum' 
+					WHERE buyerID = '$buyerID' AND Team_ID = '$teamSell'";
+					$allValues3 = mysql_query($SQL, $linkID);
+					if (!$allValue3s) {
+						echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+						exit;
+					}
+					$SQL = "UPDATE Players SET Account_Balance = '$userbalance' 
+					WHERE Player_ID = '$userID'";
+					$allValues3 = mysql_query($SQL, $linkID);
+					if (!$allValues3) {
+						echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+						exit;
+					}
+					$SQL = "UPDATE Players SET Account_Balance = '$buyerbalance' 
+					WHERE Player_ID = '$buyerID'";;
+					$allValues3 = mysql_query($SQL, $linkID);
+					if (!$allValues3) {
+						echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+						exit;
+					}
+					$SQL = "INSERT INTO Transaction (Transaction_ID,Value,QuantitySold,Team_ID,Buyer_ID,Seller_ID)
+					VALUES(,'$deltaMonies','$numSell','$teamSell','$userID','$buyerID')";
+					$allValues3 = mysql_query($SQL, $linkID);
+					if (!$allValues3) {
+						echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+						exit;
+					}
+					$sharesleft2Sell = 0;
+					break;
+				}
+				else{
+					if($Amount_Buying==$sharesleft2Sell){
+						$deltaMonies = $Amount_Buying*$Price;
+						$userBalance = $userBalance + $deltaMonies;
+						$buyerBalance = $buyerBalance + $deltaMonies;
+						$SQL = "UPDATE Players SET Account_Balance = '$userbalance' 
+						WHERE Player_ID = '$userID'";
+						$allValues3 = mysql_query($SQL, $linkID);
+						if (!$allValues3) {
+							echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+							exit;
+						}
+						$SQL = "UPDATE Players SET Account_Balance = '$buyerbalance' 
+						WHERE Player_ID = '$buyerID'";;
+						$allValues3 = mysql_query($SQL, $linkID);
+						if (!$allValues3) {
+							echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+							exit;
+						}
+						$SQL = "DELETE FROM BlueprintsToBuy 
+						WHERE buyerID = '$buyerID' AND Team_ID = '$teamSell'";
+						$allValues3 = mysql_query($SQL, $linkID);
+						if (!$allValue3s) {
+							echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+							exit;
+						}
+						$SQL = "INSERT INTO Transaction (Transaction_ID,Value,QuantitySold,Team_ID,Buyer_ID,Seller_ID)
+						VALUES(,'$deltaMonies','$Amount_Buying','$teamSell','$userID','$buyerID')";
+						$allValues3 = mysql_query($SQL, $linkID);
+						if (!$allValues3) {
+							echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+							exit;
+						}
+						$sharesleft2Sell = 0;
+						break;
+					}
+					else{
+						$deltaMonies = $Amount_Buying*$Price;
+						$userBalance = $userBalance + $deltaMonies;
+						$buyerBalance = $buyerBalance + $deltaMonies;
+						$SQL = "UPDATE Players SET Account_Balance = '$userbalance' 
+						WHERE Player_ID = '$userID'";
+						$allValues3 = mysql_query($SQL, $linkID);
+						if (!$allValues3) {
+							echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+							exit;
+						}
+						$SQL = "UPDATE Players SET Account_Balance = '$buyerbalance' 
+						WHERE Player_ID = '$buyerID'";;
+						$allValues3 = mysql_query($SQL, $linkID);
+						if (!$allValues3) {
+							echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+							exit;
+						}
+						$SQL = "DELETE FROM BlueprintsToBuy 
+						WHERE buyerID = '$buyerID' AND Team_ID = '$teamSell'";
+						$allValues3 = mysql_query($SQL, $linkID);
+						if (!$allValue3s) {
+							echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+							exit;
+						}
+						$SQL = "INSERT INTO Transaction (Transaction_ID,Value,QuantitySold,Team_ID,Buyer_ID,Seller_ID)
+						VALUES(,'$deltaMonies','$Amount_Buying','$teamSell','$userID','$buyerID')";
+						$allValues3 = mysql_query($SQL, $linkID);
+						if (!$allValues3) {
+							echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+							exit;
+						}
+						
+						$sharesleft2Sell = $sharesleft2Sell - $Amount_Buying;
+					}
+				}
+			}
+			if($sharesleft2Sell>0){
+				$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
+				mysql_select_db("jgavin", $linkID);
+				$SQL = "INSERT INTO Blueprints_ForSale (forSale_ID,Seller_ID,Price,Amount_Selling,Team_ID) VALUES(null, '".$userID."', '".$price."', '".$sharesleft2Sell."',".$teamSell.")";
+				$allValues = mysql_query($SQL, $linkID);
+				if (!$allValues) {
+					echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+					exit;
+				}
+				$SQL = "UPDATE Players_Team SET Pending = 'Pending'
+				WHERE Team_ID = '$teamSell' AND Player_ID = '$userID'";
+				$allValues = mysql_query($SQL, $linkID);
+				if (!$allValues) {
+					echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+					exit;
+				}
+			}
+		}
+		
+		
+		
+		
 		mysql_close($linkID);
 	}
 ?>
