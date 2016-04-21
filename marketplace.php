@@ -138,6 +138,10 @@ background-color:#4CAF50;
 		$maxPrice=addSlashes($_POST["price"]);
 		$checks++;
 	}
+	if($_POST["removeBuy"] != ""){
+		$removeBuy = $_POST["removeBuy"];
+		removeBuying($removeBuy,$userID);
+	}
 	
 	$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
 	mysql_select_db("jgavin", $linkID);
@@ -163,7 +167,7 @@ background-color:#4CAF50;
 	<font color=#0099cc>Number to Purchase:</font>
     <input type="text" name="numBuy" maxlength="10" size="10">
     <font color=#0099cc>Price/Blueprint:</font>
-    <input type="text" name="prices" maxlength="10" size="10">
+    <input type="text" name="price" maxlength="10" size="10">
     <input type="submit" value="Purchase Blueprints">
     </form>';
 	echo $select;
@@ -243,7 +247,8 @@ background-color:#4CAF50;
 						WHERE Seller_ID = '$Seller_ID' AND Team_ID = ".$teamBuy;
 						$allValues = mysql_query($SQL, $linkID);
 						if (!$allValues) {
-							echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+							echo "Could not successfully run query ($SQL) from DB: " . 
+							mysql_error();
 							exit;
 						}
 					}
@@ -253,17 +258,19 @@ background-color:#4CAF50;
 						WHERE Seller_ID = '$Seller_ID' AND Team_ID = '$teamBuy'";
 						$allValues = mysql_query($SQL, $linkID);
 						if (!$allValues) {
-							echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+							echo "Could not successfully run query ($SQL) from DB: " . 
+							mysql_error();
 							exit;
 						}
 						$numSharesBuying = $Amount_Selling;
 
 						//remove pending marker from seller's portfolio
 						$SQL = "UPDATE Players_Team SET Pending = '' 
-						WHERE Team_ID = '$teamBuy' AND Player_ID = '$sellerID'";
+						WHERE Team_ID = '$teamBuy' AND Player_ID = '$Seller_ID'";
 						$allValues = mysql_query($SQL, $linkID);
 						if (!$allValues) {
-							echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+							echo "Could not successfully run query ($SQL) from DB: " . 			
+							mysql_error();
 							exit;
 						}
 					}
@@ -430,19 +437,34 @@ background-color:#4CAF50;
 	mysql_close($linkID);
 ?>
 
-<h3><font color=#0099cc>Purchase Request:</font></h3>
-  <form action="marketplace.php" method="post">
-  <font color=#0099cc>Team to Sell:</font>
-  <input type="text" name="teamSell" maxlength="35" size="35">
-  <font color=#0099cc>Price to Sell for:</font>
-  <input type="text" name="amountSell" maxlength="35" size="35">
-  <font color=#0099cc>Blueprints to Sell:</font>
-  <input type="text" name="numSell" maxlength="10" size="10">
-    <input type="submit" value="Sell Blueprints">
-  </form>
+<h3><font color=#0099cc>Buy Requests:</font></h3>
 <?php
 	$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
 	mysql_select_db("jgavin", $linkID);
+	
+	$SQL = "SELECT Team_Name FROM Team t,BlueprintsToBuy b
+	WHERE t.Team_ID = b.Team_ID
+	AND buyerID = '$userID'";
+	$allValues = mysql_query($SQL, $linkID);
+	if (!$allValues) {
+		echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+		exit;
+	}
+	$totalrowsOverall = mysql_num_rows($allValues);	
+	$select= '<form action="marketplace.php" method="post">
+	<label for="removeBuy"><font color=#0099cc>Remove Pending Buy:</font></label>
+	<select name="removeBuy" id="removeBuy" title="removeBuy">';
+	for($i = 0;$i<$totalrowsOverall;$i++){
+		$thisValue = mysql_fetch_assoc($allValues);
+		extract($thisValue);
+    	$select.='<option value="'.$Team_Name.'">'.$Team_Name.'
+		</option>';
+ 	}
+	$select.='</select>
+    <input type="submit" value="Remove Pending Buys">
+    </form>';
+	echo $select;
+
 	
 		$SQL = "SELECT te.Team_Name, bb.Amount_Buying, bb.Price, p.username AS Buyer_ID
 		FROM Players p, Team te, BlueprintsToBuy bb
@@ -468,6 +490,20 @@ background-color:#4CAF50;
 		echo "</TABLE>";
 		
 		mysql_close($linkID);
+		
+		function removeBuying($removeBuy,$userID){
+			$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
+			mysql_select_db("jgavin", $linkID);
+			
+			$SQL = "DELETE FROM BlueprintsToBuy WHERE buyerID = '$userID' 
+			AND Team_ID = (SELECT Team_ID FROM Team WHERE Team_Name = '$removeBuy')";
+			$allValues = mysql_query($SQL, $linkID);
+			if (!$allValues) {
+				echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+				exit;
+			}
+			mysql_close($linkID);
+		}
 ?>
 </div>
 

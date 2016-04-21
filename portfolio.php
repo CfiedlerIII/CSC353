@@ -98,6 +98,7 @@ background-color:#4CAF50;
 	$teamSell;
 	$numSell;
 	$prices;
+	$removePending;
 	$sellAll = false;
 	$userID = $_SESSION['uuid'];
 	if($_POST["teamSell"] != ""){
@@ -114,6 +115,10 @@ background-color:#4CAF50;
 	}
 	else{
 		$searchTerm=addSlashes($_POST["searchTerm"]);
+	}
+	if($_POST["removePending"] != ""){
+		$removePending = $_POST["removePending"];
+		removePending($removePending,$userID);
 	}
 	$inputSort=$_POST["sort"];
 	$sort;
@@ -169,6 +174,42 @@ background-color:#4CAF50;
       	<input type="submit" value="Sell Blueprints">
     	</form>';
 		echo $select;
+		
+		$SQL = "SELECT Team_ID FROM Players_Team 
+		WHERE Player_ID = ".$userID." AND Pending = 'Pending'";
+		$allValues = mysql_query($SQL, $linkID);
+		if (!$allValues) {
+			echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+			exit;
+		}
+		$totalrowsOverall = mysql_num_rows($allValues);
+		$teamNameArray[$totalrowsOverall];
+		for($i = 0;$i<$totalrowsOverall;$i++){
+			$thisValue = mysql_fetch_assoc($allValues);
+			extract($thisValue);
+			$SQL = "SELECT Team_Name FROM Team WHERE Team_ID = ".$Team_ID;
+			$allValues2 = mysql_query($SQL, $linkID);
+			if (!$allValues2) {
+				echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+				exit;
+			}
+			$thisValue2 = mysql_fetch_assoc($allValues2);
+			extract($thisValue2);
+			$teamNameArray[$i] = $Team_Name;
+		}
+		
+		//remove pending sells
+		$select= '<form action="portfolio.php" method="post">
+		<label for="removePending"><font color=#0099cc>Sale to Remove:</font></label>
+		<select name="removePending" id="removePending" title="removePending">';
+		for($i = 0;$i<$totalrowsOverall;$i++){
+      		$select.='<option value="'.$teamNameArray[$i].'">'.$teamNameArray[$i].'
+			</option>';
+ 		}
+		$select.='</select>
+      	<input type="submit" value="Remove Pending Sale">
+    	</form>';
+		echo $select;
 	}
 		
 	$SQL = "SELECT Account_Balance FROM Players WHERE Player_ID = ".$userID;
@@ -185,33 +226,34 @@ background-color:#4CAF50;
 	echo "<TD>\$$Account_Balance</TD>";
 	echo "</TR>";
 	echo "</TABLE>";
-			
 	if($searchTerm==""){
-		$SQL = "SELECT t.Team_Name as Team_Name, 	
-		(t.IPO_Value/t.NumOfTotBlueprints)*pt.NumOfBlueprints as Value_Owned, 
+		$SQL = "SELECT t.Team_Name,t.IPO_Value as Book_Value, 
 		pt.NumOfBlueprints as Num_Owned, pt.Pending
 		FROM Team t, Players_Team pt
 		Where pt.Team_ID = t.Team_ID
 		AND pt.Player_ID = ".$userID."
+		GROUP BY pt.Team_ID
 		Order By ".$sort;
 	}
 	else{
-		$SQL = "SELECT t.Team_Name as Team_Name, 		 
-		(t.IPO_Value/t.NumOfTotBlueprints)*pt.NumOfBlueprints as Value_Owned, 	
+		$SQL = "SELECT t.Team_Name, t.IPO_Value as Book_Value, 
 		pt.NumOfBlueprints as Num_Owned, pt.Pending
-		FROM Team t, Players_Team pt
+		FROM Team t, Players_Team pt,
 		Where pt.Team_ID = t.Team_ID
 		AND pt.Player_ID = ".$userID."
 		AND Team_Name LIKE '%".$searchTerm."%'
+		GROUP BY pt.Team_ID
 		Order By ".$sort;
 	}
+	
 	$allValues = mysql_query($SQL, $linkID);
 	if (!$allValues) {
 		echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
 		exit;
 	}
 	echo "<TABLE BORDER=1 CELLPADDING=8>";
-	echo "<TR><TD><B>Team_name</B></TD><TD><B>Value_Owned</B></TD><TD><B>Num_Owned</B></TD>
+	echo "<TR><TD><B>Team_name</B></TD><TD><B>Book_Value</B></TD><TD><B>Market_Value</B></TD><TD><B>
+	Num_Owned</B></TD>
 	<TD><B>Notes</B></TD>";
 	$totalrows = mysql_num_rows($allValues);
 	for ($i=1; $i <= $totalrows; $i++){
@@ -219,7 +261,8 @@ background-color:#4CAF50;
 		extract($thisValue);
 		echo "<TR>";
 		echo "<TD>$Team_Name</TD>";
-		echo "<TD>\$$Value_Owned</TD>";
+		echo "<TD>\$$Book_Value</TD>";
+		echo "<TD>\$$Market_Value</TD>";
 		echo "<TD>$Num_Owned</TD>";
 		echo "<TD>$Pending</TD>";
 		echo "</TR>";
@@ -227,6 +270,28 @@ background-color:#4CAF50;
 	echo "</TABLE>";
 
 	mysql_close($linkID);
+	
+	function removePending($removePending,$userID){
+		$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
+		mysql_select_db("jgavin", $linkID);
+		//remove pending marker from seller's portfolio
+		$SQL = "UPDATE Players_Team SET Pending = '' 
+		WHERE Team_ID = (SELECT Team_ID FROM Team WHERE Team_Name = '$removePending') AND Player_ID = 
+		'$userID'";
+		$allValues = mysql_query($SQL, $linkID);
+		if (!$allValues) {
+			echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+			exit;
+		}
+		$SQL = "DELETE FROM Blueprints_ForSale WHERE Seller_ID = '$userID' 
+		AND Team_ID = (SELECT Team_ID FROM Team WHERE Team_Name = '$removePending')";
+		$allValues = mysql_query($SQL, $linkID);
+		if (!$allValues) {
+			echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+			exit;
+		}
+		mysql_close($linkID);
+	}
 ?>
 </div>
 
