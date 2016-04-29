@@ -138,14 +138,14 @@ Order By ".$sort;
 		exit;
 	}
 	echo "<TABLE BORDER=1 CELLPADDING=8>";
-	echo "<TR><TD><B>Transaction_ID</B></TD><TD><B>Value</B></TD><TD><B>QuantitySold</B></TD><TD><B>Team_Name</B></TD><TD><B>Buyer_ID</B></TD><TD><B>Seller_ID</B></TD>";
+	echo "<TR><TD><B>Transaction ID</B></TD><TD><B>Value</B></TD><TD><B>Quantity Sold</B></TD><TD><B>Team Name</B></TD><TD><B>Buyer ID</B></TD><TD><B>Seller ID</B></TD>";
 		$totalrows = mysql_num_rows($allValues);
 		for ($i=1; $i <= $totalrows; $i++){
 			$thisValue = mysql_fetch_assoc($allValues);
 			extract($thisValue);
 			echo "<TR>";
 			echo "<TD>$Transaction_ID</TD>";
-			echo "<TD>\$$Value</TD>";
+			echo "<TD>\$".round($Value,2,PHP_ROUND_HALF_DOWN)."</TD>";
 			echo "<TD>$QuantitySold</TD>";
 			echo "<TD>$Team_Name</TD>";
 			echo "<TD>$Buyer_ID</TD>";

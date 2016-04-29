@@ -80,6 +80,7 @@ background-color:#4CAF50;
 <?php
 	session_start();
 	$_SESSION['uuid'] = null;
+	$_SESSION['admin'] = null;
 ?>
 </div>
 
