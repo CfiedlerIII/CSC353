@@ -119,7 +119,7 @@ background-color:#4CAF50;
 		$teamBuy = "";
 	}
 	else{
-		$teamBuy=addSlashes($_POST["teamBuy"]);
+		$teamBuy=$_POST["teamBuy"];
 		$checks++;
 	}
 	if($_POST["numBuy"] == ""){
@@ -143,22 +143,23 @@ background-color:#4CAF50;
 	
 	$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
 	mysql_select_db("jgavin", $linkID);
-	
-	$SQL = "SELECT Account_Balance,Available_Balance FROM Players WHERE Player_ID = ".$userID;
-	$allValues = mysql_query($SQL, $linkID);
-	if (!$allValues) {
-		echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
-		exit;
+	if($userID!=null){
+		$SQL = "SELECT Account_Balance,Available_Balance FROM Players WHERE Player_ID = ".$userID;
+		$allValues = mysql_query($SQL, $linkID);
+		if (!$allValues) {
+			echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+			exit;
+		}
+		echo "<TABLE BORDER=1 CELLPADDING=8>";
+		echo "<TR><TD><B>Current Balance</B></TD><TD><B>Available Balance</B></TD>";
+		$thisValue = mysql_fetch_assoc($allValues);
+		extract($thisValue);
+		echo "<TR>";
+		echo "<TD>\$".round($Account_Balance,2,PHP_ROUND_HALF_DOWN)."</TD>";
+		echo "<TD>\$".round($Available_Balance,2,PHP_ROUND_HALF_DOWN)."</TD>";
+		echo "</TR>";
+		echo "</TABLE>";
 	}
-	echo "<TABLE BORDER=1 CELLPADDING=8>";
-	echo "<TR><TD><B>Current Balance</B></TD><TD><B>Available Balance</B></TD>";
-	$thisValue = mysql_fetch_assoc($allValues);
-	extract($thisValue);
-	echo "<TR>";
-	echo "<TD>\$".round($Account_Balance,2,PHP_ROUND_HALF_DOWN)."</TD>";
-	echo "<TD>\$".round($Available_Balance,2,PHP_ROUND_HALF_DOWN)."</TD>";
-	echo "</TR>";
-	echo "</TABLE>";
 
 
 	$SQL = "SELECT Team_Name FROM Team";
@@ -214,12 +215,10 @@ background-color:#4CAF50;
 		for ($i=1; $i <= $totalrows; $i++){
 			$thisValue = mysql_fetch_assoc($allValues);
 			extract($thisValue);
-			$Amount_Selling;
-			$Price;
-			$Seller_ID;
+			
 			if($sharesStillWanted>0){
+				echo $i;
 				if($Price<=$maxPrice){
-					$sharesStillWanted = $numBuy - $sharesAquired;
 					//aquire the current balances of the buyer and seller
 					$SQL = "SELECT Account_Balance, Available_Balance FROM Players WHERE Player_ID = '$Seller_ID'";
 					$allValues = mysql_query($SQL, $linkID);
@@ -366,10 +365,10 @@ background-color:#4CAF50;
 					
 					
 					//update both account balances and update transaction table
-					$sellerFinalBal = $sellerInitBal + ($Price * $numSharesBuying);
-					$sellerFinalAvail = $sellerInitAvail + ($Price * $numSharesBuying);
-					$buyerFinalBal = $buyerInitBal - ($Price * $numSharesBuying);
-					$buyerFinalAvail = $buyerInitAvail - ($Price * $numSharesBuying);
+					$sellerFinalBal = $sellerInitBal + ($maxPrice * $numSharesBuying);
+					$sellerFinalAvail = $sellerInitAvail + ($maxPrice * $numSharesBuying);
+					$buyerFinalBal = $buyerInitBal - ($maxPrice * $numSharesBuying);
+					$buyerFinalAvail = $buyerInitAvail - ($maxPrice * $numSharesBuying);
 
 					$SQL = "UPDATE Players 
 					SET Account_Balance = ".$sellerFinalBal.",
@@ -391,13 +390,14 @@ background-color:#4CAF50;
 					}
 					$SQL = "INSERT INTO Transaction
 					(Transaction_ID,Value,QuantitySold,Team_ID,Buyer_ID,Seller_ID)
-					VALUES(null,".$Price.",".$numSharesBuying.",".$teamBuy.",".$userID.",".$Seller_ID.")";
+					VALUES(null,".$maxPrice.",".$numSharesBuying.",".$teamBuy.",".$userID.",".$Seller_ID.")";
 					$allValues = mysql_query($SQL, $linkID);
 					if (!$allValues) {
 						echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
 						exit;
 					}
 					$sharesAquired = $sharesAquired + $numSharesBuying;
+					$sharesStillWanted = $numBuy - $sharesAquired;
 				}
 				//there are no shares selling buyer's price range
 				else{
