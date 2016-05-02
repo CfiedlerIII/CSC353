@@ -1,64 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<style>
-#header {
-    background-color:#0099cc;
-    color:white;
-    text-align:center;
-	width:100%;
-}
-#section {
-	background-color:#e6e6e6;
-    width:100%;
-    float:left;
-    padding:10px;	 	 
-}
-#footer {
-    background-color:#0099cc;
-    color:white;
-    clear:both;
-    text-align:center;
-    padding:5px;	
-    width:100%; 	 
-}
-body {
-	background-color:#0099cc
-}
-title {
-    font-size:60px;
-	color:white;
-    background-color:#0099cc;   
-	text-align: right;   
-}
-ul {
-    list-style-type: none;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    background-color: #0099cc;
-}
-
-li {
-    float: left;
-}
-
-li a {
-    display: block;
-    color: white;
-    text-align: center;
-    padding: 14px 16px;
-    text-decoration: none;
-}
-
-a:hover:not(.active) {
-    background-color: #111;
-}
-
-.active {
-background-color:#4CAF50;
-}
-</style>
+<link rel="stylesheet" type="text/css" href="main.css">
 </head>
 <body>
 
@@ -83,17 +26,17 @@ background-color:#4CAF50;
 	$usernameInput = addSlashes($_POST["username"]);
 	$passwordInput = addSlashes($_POST["password"]);
 	$confirmedBool = false;
-	
+
 	$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
 	mysql_select_db("jgavin", $linkID);
-	
+
 	$SQL = "SELECT Confirmed FROM Players WHERE Username = '".$usernameInput."'";
 	$allValues = mysql_query($SQL, $linkID);
 	if (mysql_affected_rows() == 0) {
 		echo "Log in request not handled correctly. " . mysql_error();
 		exit;
 	}
-	
+
 	$totalrows = mysql_num_rows($allValues);
 		for ($i=1; $i <= $totalrows; $i++){
 			$thisValue = mysql_fetch_assoc($allValues);
@@ -102,24 +45,24 @@ background-color:#4CAF50;
 			if($confirmedPlayer == 1){
 				$confirmedBool = true;
 				break;
-				
+
 			}
 		}
-		
+
 		if($confirmedBool){
-		
-		
-		
+
+
+
 	$SQL = "SELECT Player_ID, password
 		FROM Players
 		WHERE Username = '".$usernameInput."'
-		Order By Player_ID";	
+		Order By Player_ID";
 	$allValues = mysql_query($SQL, $linkID);
 	if (mysql_affected_rows() == 0) {
 		echo "Log in request not handled correctly. " . mysql_error();
 		exit;
 	}
-	
+
 	$totalrows = mysql_num_rows($allValues);
 		for ($i=1; $i <= $totalrows; $i++){
 			$thisValue = mysql_fetch_assoc($allValues);
@@ -130,20 +73,20 @@ background-color:#4CAF50;
 				$_SESSION['uuid'] = $currentUUID;
 				echo "You have been successfully signed in!";
 				break;
-				
+
 			}
 		}
-		
-		
+
+
 	$SQL = "SELECT Admin FROM Players
-	WHERE Player_ID = '".$_SESSION['uuid']."'";	
-	
+	WHERE Player_ID = '".$_SESSION['uuid']."'";
+
 	$allValues = mysql_query($SQL, $linkID);
 	if (mysql_affected_rows() == 0) {
 		echo "Log in request not handled correctly. " . mysql_error();
 		exit;
 	}
-	
+
 	$totalrows = mysql_num_rows($allValues);
 		for ($i=1; $i <= $totalrows; $i++){
 			$thisValue = mysql_fetch_assoc($allValues);
@@ -151,7 +94,7 @@ background-color:#4CAF50;
 			$adminStatus = $Admin;
 			$_SESSION['admin'] = $adminStatus;
 		}
-		
+
 		}
 		else{
 			echo "Your account is awaiting confirmation.";

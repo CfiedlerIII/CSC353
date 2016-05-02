@@ -1,64 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<style>
-#header {
-    background-color:#0099cc;
-    color:white;
-    text-align:center;
-	width:100%;
-}
-#section {
-	background-color:#e6e6e6;
-    width:100%;
-    float:left;
-    padding:10px;	 	 
-}
-#footer {
-    background-color:#0099cc;
-    color:white;
-    clear:both;
-    text-align:center;
-    padding:5px;	
-    width:100%; 	 
-}
-body {
-	background-color:#0099cc
-}
-title {
-    font-size:60px;
-	color:white;
-    background-color:#0099cc;   
-	text-align: right;   
-}
-ul {
-    list-style-type: none;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    background-color: #0099cc;
-}
-
-li {
-    float: left;
-}
-
-li a {
-    display: block;
-    color: white;
-    text-align: center;
-    padding: 14px 16px;
-    text-decoration: none;
-}
-
-a:hover:not(.active) {
-    background-color: #111;
-}
-
-.active {
-background-color:#4CAF50;
-}
-</style>
+<link rel="stylesheet" type="text/css" href="main.css">
 </head>
 <body>
 
@@ -80,6 +23,7 @@ background-color:#4CAF50;
 <?php
 	session_start();
 	$_SESSION['uuid'] = null;
+	$_SESSION['admin'] = null;
 ?>
 </div>
 

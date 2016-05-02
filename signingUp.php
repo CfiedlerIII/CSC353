@@ -1,64 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<style>
-#header {
-    background-color:#0099cc;
-    color:white;
-    text-align:center;
-	width:100%;
-}
-#section {
-	background-color:#e6e6e6;
-    width:100%;
-    float:left;
-    padding:10px;	 	 
-}
-#footer {
-    background-color:#0099cc;
-    color:white;
-    clear:both;
-    text-align:center;
-    padding:5px;	
-    width:100%; 	 
-}
-body {
-	background-color:#0099cc
-}
-title {
-    font-size:60px;
-	color:white;
-    background-color:#0099cc;   
-	text-align: right;   
-}
-ul {
-    list-style-type: none;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    background-color: #0099cc;
-}
-
-li {
-    float: left;
-}
-
-li a {
-    display: block;
-    color: white;
-    text-align: center;
-    padding: 14px 16px;
-    text-decoration: none;
-}
-
-a:hover:not(.active) {
-    background-color: #111;
-}
-
-.active {
-background-color:#4CAF50;
-}
-</style>
+<link rel="stylesheet" type="text/css" href="main.css">
 </head>
 <body>
 
@@ -124,13 +67,13 @@ background-color:#4CAF50;
 		else{
 			$correctEntries++;
 		}
-	
+
 	if($correctEntries == 7){
 		$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
 		mysql_select_db("jgavin", $linkID);
-		
-		$SQL = "INSERT INTO `jgavin`.`Players` (`Player_ID`, `Username`, `First_Name`, `Last_Name`, `Email_Address`, `password`,'Account_Balance','Admin','Confirmed') VALUES (NULL, '".$username."', '".$first."', '".$last."', '".$email."', '".$pass1."',0,0,0);";
-		
+
+		$SQL = "INSERT INTO Players (Player_ID, Username, First_Name, Last_Name, Email_Address, password,Account_Balance,Available_Balance,Admin,Confirmed) VALUES (NULL, '".$username."', '".$first."', '".$last."', '".$email."', '".$pass1."',100,100,0,0);";
+
 		$allValues = mysql_query($SQL, $linkID);
 		if (mysql_affected_rows() == 0) {
 			echo "Sign up request not handled correctly. " . mysql_error();
@@ -139,8 +82,8 @@ background-color:#4CAF50;
 		else{
 			echo "ACCOUNT INFORMATION RECIEVED AND AWAITING ADMINISTRATOR CONFIRMATION.";
 		}
+		mysql_close($linkID);
 	}
-	mysql_close($linkID);
 ?>
 </div>
 

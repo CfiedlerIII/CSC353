@@ -1,64 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<style>
-#header {
-    background-color:#0099cc;
-    color:white;
-    text-align:center;
-	width:100%;
-}
-#section {
-	background-color:#e6e6e6;
-    width:100%;
-    float:left;
-    padding:10px;	 	 
-}
-#footer {
-    background-color:#0099cc;
-    color:white;
-    clear:both;
-    text-align:center;
-    padding:5px;	
-    width:100%; 	 
-}
-body {
-	background-color:#0099cc
-}
-title {
-    font-size:60px;
-	color:white;
-    background-color:#0099cc;   
-	text-align: right;   
-}
-ul {
-    list-style-type: none;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    background-color: #0099cc;
-}
-
-li {
-    float: left;
-}
-
-li a {
-    display: block;
-    color: white;
-    text-align: center;
-    padding: 14px 16px;
-    text-decoration: none;
-}
-
-a:hover:not(.active) {
-    background-color: #111;
-}
-
-.active {
-background-color:#4CAF50;
-}
-</style>
+<link rel="stylesheet" type="text/css" href="main.css">
 </head>
 <body>
 
@@ -105,7 +48,7 @@ background-color:#4CAF50;
 	else{
 		$sort = "Buyer_ID";
 	}
-	
+
 	$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
 	mysql_select_db("jgavin", $linkID);
 	//if($searchTerm==""){
@@ -127,8 +70,8 @@ FROM Players p, Transaction t, Team te, Players pl
 Where p.player_ID = t.buyer_ID
 and te.Team_ID = t.Team_ID
 and pl.player_ID = t.seller_ID
-and (Team_Name LIKE '%".$searchTerm."%' 
-or p.username LIKE '%".$searchTerm."%' 
+and (Team_Name LIKE '%".$searchTerm."%'
+or p.username LIKE '%".$searchTerm."%'
 or pl.username LIKE '%".$searchTerm."%')
 Order By ".$sort;
 		}
@@ -138,14 +81,14 @@ Order By ".$sort;
 		exit;
 	}
 	echo "<TABLE BORDER=1 CELLPADDING=8>";
-	echo "<TR><TD><B>Transaction_ID</B></TD><TD><B>Value</B></TD><TD><B>QuantitySold</B></TD><TD><B>Team_Name</B></TD><TD><B>Buyer_ID</B></TD><TD><B>Seller_ID</B></TD>";
+	echo "<TR><TD><B>Transaction ID</B></TD><TD><B>Value</B></TD><TD><B>Quantity Sold</B></TD><TD><B>Team Name</B></TD><TD><B>Buyer ID</B></TD><TD><B>Seller ID</B></TD>";
 		$totalrows = mysql_num_rows($allValues);
 		for ($i=1; $i <= $totalrows; $i++){
 			$thisValue = mysql_fetch_assoc($allValues);
 			extract($thisValue);
 			echo "<TR>";
 			echo "<TD>$Transaction_ID</TD>";
-			echo "<TD>\$$Value</TD>";
+			echo "<TD>\$".round($Value,2,PHP_ROUND_HALF_DOWN)."</TD>";
 			echo "<TD>$QuantitySold</TD>";
 			echo "<TD>$Team_Name</TD>";
 			echo "<TD>$Buyer_ID</TD>";
