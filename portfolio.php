@@ -393,6 +393,18 @@
 		}
 		$thisValue = mysql_fetch_assoc($allValues);
 		if(empty($thisValue)){
+			$SQL = "SELECT NumOfBlueprints FROM Players_Team WHERE Player_ID = '$userID' AND Team_ID = '$teamSell'";
+			$allValues3 = mysql_query($SQL, $linkID);
+			if (!$allValues3) {
+				echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+				exit;
+			}
+			$thisValue3 = mysql_fetch_assoc($allValues3);
+			extract($thisValue3);
+			if($numSell>=$NumOfBlueprints){
+				$numSell = $NumOfBlueprints;
+			}
+			
 			$SQL = "INSERT INTO Blueprints_ForSale (forSale_ID,Seller_ID,Price,Amount_Selling,Team_ID) VALUES(null,'$userID','$price','$numSell','$teamSell')";
 			$allValues2 = mysql_query($SQL, $linkID);
 			if (!$allValues2) {
@@ -410,10 +422,10 @@
 		else{
 			$totalrows = mysql_num_rows($allValues);
 			$sharesleft2Sell = $numSell;
-			for($i=0;$i<$totalrows;$i++){
+			for($i=1;$i<=$totalrows;$i++){
 				extract($thisValue);
 				$numOwned = getNumOwned($teamSell,$userID);
-				if($numOwned==$AmountSelling){
+				if($numOwned==$Amount_Buying){
 				  $sellAll = True;
 				}
 				$buyerBalance = getBalance($buyerID);

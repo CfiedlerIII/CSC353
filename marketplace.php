@@ -196,6 +196,8 @@ background-color:#4CAF50;
 		extract($thisValue);
 		$teamBuy = $Team_ID;
 
+		$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
+		mysql_select_db("jgavin", $linkID);
 		//get an array of all possible sales to buy
 		$SQL = "SELECT Amount_Selling,Price,Seller_ID FROM Blueprints_ForSale
 		WHERE Team_ID = '$teamBuy' ORDER BY Price";
@@ -205,151 +207,158 @@ background-color:#4CAF50;
 			exit;
 		}
 		$totalrows = mysql_num_rows($allValues);
-		$leaveForLoop = false;
 		$sharesAquired = 0;
 		$sharesStillWanted = $numBuy;
 
 		for ($i=1; $i <= $totalrows; $i++){
 			$thisValue = mysql_fetch_assoc($allValues);
 			extract($thisValue);
-			
-			if($sharesStillWanted>0){
-				echo $i;
-				if($Price<=$maxPrice){
-					//define the seller's account balances
-					$SQL = "SELECT Account_Balance, Available_Balance FROM Players WHERE Player_ID = '$Seller_ID'";
-					$thisValue = sqlQuery($SQL);
-					extract($thisValue);
-
-					$sellerInitBal = $Account_Balance;
-					$sellerInitAvail = $Available_Balance;
-
-
-					//define the buyer's balances
-					$SQL = "SELECT Account_Balance, Available_Balance FROM Players WHERE Player_ID = '$userID'";
-					$thisValue = sqlQuery($SQL);
-					extract($thisValue);
-
-					$buyerInitBal = $Account_Balance;
-					$buyerInitAvail = $Available_Balance;
-					
-					//if the buyer can afford all wanted shares
-					$numSharesBuying = 0;
-					$buyerTestBal = $buyerInitAvail;
-					for($i=0;$i<$sharesStillWanted;$i++){
-						$buyerTestBal = $buyerTestBal - $maxPrice;
-						if($buyerTestBal>0.0){
-							$numSharesBuying++;
-						}
-					}
-					
-					$sellingSharesLeft = $Amount_Selling - $numSharesBuying;
-
-					//remove shares from the seller's inventory
-					if($numSharesBuying<$Amount_Selling){
-						$SQL = "UPDATE Blueprints_ForSale SET Amount_Selling = '$sellingSharesLeft' 
-						WHERE Seller_ID = '$Seller_ID' AND Team_ID = ".$teamBuy;
-						sqlAction($SQL);
-					}
-					else{
-						//remove the blueprints from the seller's portfolio
-						$SQL = "DELETE FROM Blueprints_ForSale
-						WHERE Seller_ID = '$Seller_ID' AND Team_ID = '$teamBuy'";
-						sqlAction($SQL);
-
-						$numSharesBuying = $Amount_Selling;
-
-						//remove pending marker from seller's portfolio
-						$SQL = "UPDATE Players_Team SET Pending = '' 
-						WHERE Team_ID = '$teamBuy' AND Player_ID = '$Seller_ID'";
-						sqlAction($SQL);
-					}
-					
-					//get number of shares owned by seller
-					$SQL = "SELECT NumOfBlueprints FROM Players_Team 
-					WHERE Team_ID = ".$teamBuy." AND Player_ID = ".$Seller_ID;
-					$thisValue = sqlQuery($SQL);
-					extract($thisValue);
-
-					//define the final number of shares for the seller
-					$finalNumSeller = $NumOfBlueprints - $numSharesBuying;
-					
-					//remove blueprints from the seller's portfolio
-					if($finalNumSeller==0){
-						$SQL = "DELETE FROM Players_Team
-						WHERE Player_ID = '$Seller_ID' AND Team_ID = '$teamBuy'";
-						sqlAction($SQL);
-					}
-					else{
-						$SQL = "UPDATE Players_Team SET NumOfBlueprints = '$finalNumSeller' 
-						WHERE Player_ID = '$Seller_ID' AND Team_ID = '$teamBuy'";
-						sqlAction($SQL);
-					}
-					
-
-					//get the number of shares of that team the buyer owns
-					$SQL = "SELECT NumOfBlueprints FROM Players_Team
-					WHERE Team_ID = '$teamBuy' AND Player_ID = '$userID'";
-					$thisValue = sqlQuery($SQL);
-
-					if(empty($thisValue)){
-						$buyerInitShares = 0;
-					}
-					else{
+			if($userID!=$Seller_ID){
+				if($sharesStillWanted>0){
+					if($Price<=$maxPrice){
+						//define the seller's account balances
+						$SQL = "SELECT Account_Balance, Available_Balance FROM Players WHERE Player_ID = '$Seller_ID'";
+						$thisValue = sqlQuery($SQL);
 						extract($thisValue);
-						$buyerInitShares = $NumOfBlueprints;
-					}
-
-					//define the final number of shares for the purchaser
-					$buyerFinalShares = $buyerInitShares + $numSharesBuying;
-
-					//add the purchased shares to the buyer's inventory
-					if($buyerInitShares==0){
-						$SQL = "INSERT INTO Players_Team 
-						(NumOfBlueprints,Player_ID,Team_ID,Pending)
-						VALUES('$numSharesBuying','$userID','$teamBuy','')";
+	
+						$sellerInitBal = $Account_Balance;
+						$sellerInitAvail = $Available_Balance;
+	
+						//define the buyer's balances
+						$SQL = "SELECT Account_Balance, Available_Balance FROM Players WHERE Player_ID = '$userID'";
+						$thisValue = sqlQuery($SQL);
+						extract($thisValue);
+	
+						$buyerInitBal = $Account_Balance;
+						$buyerInitAvail = $Available_Balance;
+						
+						//if the buyer can afford all wanted shares
+						$numSharesBuying = 0;
+						$buyerTestBal = $buyerInitAvail;
+						for($j=0;$j<$sharesStillWanted;$j++){
+							$buyerTestBal = $buyerTestBal - $maxPrice;
+							if($buyerTestBal>0.0){
+								$numSharesBuying++;
+							}
+						}
+						
+						//remove shares from the seller's inventory
+						if($numSharesBuying<$Amount_Selling){
+							$sellingSharesLeft = $Amount_Selling - $numSharesBuying;
+							$SQL = "UPDATE Blueprints_ForSale SET Amount_Selling = '$sellingSharesLeft' 
+							WHERE Seller_ID = '$Seller_ID' AND Team_ID = ".$teamBuy;
+							sqlAction($SQL);
+						}
+						else{
+							//remove the blueprints from the seller's portfolio
+							$SQL = "DELETE FROM Blueprints_ForSale
+							WHERE Seller_ID = '$Seller_ID' AND Team_ID = '$teamBuy'";
+							sqlAction($SQL);
+	
+							$numSharesBuying = $Amount_Selling;
+	
+							//remove pending marker from seller's portfolio
+							$SQL = "UPDATE Players_Team SET Pending = '' 
+							WHERE Team_ID = '$teamBuy' AND Player_ID = '$Seller_ID'";
+							sqlAction($SQL);
+						}
+						
+						//get number of shares owned by seller
+						$SQL = "SELECT NumOfBlueprints FROM Players_Team 
+						WHERE Team_ID = ".$teamBuy." AND Player_ID = ".$Seller_ID;
+						$thisValue = sqlQuery($SQL);
+						if(empty($thisValue)){
+							$buyerInitShares = 0;
+						}
+						else{
+							extract($thisValue);
+						}
+	
+						//define the final number of shares for the seller
+						$finalNumSeller = $NumOfBlueprints - $numSharesBuying;
+						
+						//remove blueprints from the seller's portfolio
+						if($finalNumSeller==0){
+							$SQL = "DELETE FROM Players_Team
+							WHERE Player_ID = '$Seller_ID' AND Team_ID = '$teamBuy'";
+							sqlAction($SQL);
+						}
+						else{
+							$SQL = "UPDATE Players_Team SET NumOfBlueprints = '$finalNumSeller' 
+							WHERE Player_ID = '$Seller_ID' AND Team_ID = '$teamBuy'";
+							sqlAction($SQL);
+						}
+						
+	
+						//get the number of shares of that team the buyer owns
+						$SQL = "SELECT NumOfBlueprints FROM Players_Team
+						WHERE Team_ID = '$teamBuy' AND Player_ID = '$userID'";
+						$thisValue = sqlQuery($SQL);
+	
+						if(empty($thisValue)){
+							$buyerInitShares = 0;
+						}
+						else{
+							extract($thisValue);
+							$buyerInitShares = $NumOfBlueprints;
+						}
+	
+						//define the final number of shares for the purchaser
+						$buyerFinalShares = $buyerInitShares + $numSharesBuying;
+	
+						//add the purchased shares to the buyer's inventory
+						if($buyerInitShares==0){
+							$SQL = "INSERT INTO Players_Team 
+							(NumOfBlueprints,Player_ID,Team_ID,Pending)
+							VALUES('$numSharesBuying','$userID','$teamBuy','')";
+							sqlAction($SQL);
+						}
+						else{
+							$SQL = "UPDATE Players_Team 
+							SET NumOfBlueprints = '$buyerFinalShares'
+							WHERE Team_ID = '$teamBuy' AND Player_ID = '$userID'";
+							sqlAction($SQL);
+						}
+						
+						//update both account balances and update transaction table
+						echo "NSB: ".$numSharesBuying;
+						echo "maxP: ".$maxPrice;
+						$sellerFinalBal = $sellerInitBal + ($maxPrice * $numSharesBuying);
+						$sellerFinalAvail = $sellerInitAvail + ($maxPrice * $numSharesBuying);
+						$buyerFinalBal = $buyerInitBal - ($maxPrice * $numSharesBuying);
+						$buyerFinalAvail = $buyerInitAvail - ($maxPrice * $numSharesBuying);
+	
+						$SQL = "UPDATE Players 
+						SET Account_Balance = ".$sellerFinalBal.",
+						Available_Balance = ".$sellerFinalAvail."
+						WHERE Player_ID = ".$Seller_ID;
 						sqlAction($SQL);
+	
+						$SQL = "UPDATE Players 
+						SET Account_Balance = ".$buyerFinalBal.",
+						Available_Balance = ".$buyerFinalAvail."
+						WHERE Player_ID = ".$userID;
+						sqlAction($SQL);
+	
+						$SQL = "INSERT INTO Transaction
+						(Transaction_ID,Value,QuantitySold,Team_ID,Buyer_ID,Seller_ID)
+						VALUES(null,".$maxPrice.",".$numSharesBuying.",".$teamBuy.",".$userID.",".$Seller_ID.")";
+						sqlAction($SQL);
+	
+						$sharesAquired = $sharesAquired + $numSharesBuying;
+						$sharesStillWanted = $numBuy - $sharesAquired;
 					}
 					else{
-						$SQL = "UPDATE Players_Team 
-						SET NumOfBlueprints = '$buyerFinalShares'
-						WHERE Team_ID = '$teamBuy' AND Player_ID = '$userID'";
-						sqlAction($SQL);
+						break;
 					}
-					
-					//update both account balances and update transaction table
-					$sellerFinalBal = $sellerInitBal + ($maxPrice * $numSharesBuying);
-					$sellerFinalAvail = $sellerInitAvail + ($maxPrice * $numSharesBuying);
-					$buyerFinalBal = $buyerInitBal - ($maxPrice * $numSharesBuying);
-					$buyerFinalAvail = $buyerInitAvail - ($maxPrice * $numSharesBuying);
-
-					$SQL = "UPDATE Players 
-					SET Account_Balance = ".$sellerFinalBal.",
-					Available_Balance = ".$sellerFinalAvail."
-					WHERE Player_ID = ".$Seller_ID;
-					sqlAction($SQL);
-
-					$SQL = "UPDATE Players 
-					SET Account_Balance = ".$buyerFinalBal.",
-					Available_Balance = ".$buyerFinalAvail."
-					WHERE Player_ID = ".$userID;
-					sqlAction($SQL);
-
-					$SQL = "INSERT INTO Transaction
-					(Transaction_ID,Value,QuantitySold,Team_ID,Buyer_ID,Seller_ID)
-					VALUES(null,".$maxPrice.",".$numSharesBuying.",".$teamBuy.",".$userID.",".$Seller_ID.")";
-					sqlAction($SQL);
-
-					$sharesAquired = $sharesAquired + $numSharesBuying;
-					$sharesStillWanted = $numBuy - $sharesAquired;
 				}
-				//there are no shares selling buyer's price range
 				else{
 					break;
 				}
 			}
 			else{
-				break;
+				echo "<h2>YOU ARE CURRENTLY SELLING THAT TEAM.</h2>";
+				echo "<h2>REMOVE YOUR PENDING SELL BEFORE PURCHASING MORE..</h2>";
 			}
 		}
 		$sharesStillWanted = $numBuy - $sharesAquired;
@@ -387,6 +396,8 @@ background-color:#4CAF50;
 		te.Team_ID = bs.Team_ID and (Team_Name LIKE '%".$searchTerm."%' or 
 		Price LIKE '%".$searchTerm."%') ORDER BY ".$sort;
 	}
+	$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
+	mysql_select_db("jgavin", $linkID);
 	$allValues = mysql_query($SQL, $linkID);
 	if (!$allValues) {
 		echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
@@ -475,7 +486,7 @@ background-color:#4CAF50;
 		$availBalance = $Available_Balance;
 		
 		//aquire the rows from BlueprintsToBuy
-		$SQL = "SELECT Price, Amount_Buying FROM BlueprintsToBuy 
+		$SQL = "SELECT Amount_Buying, Price FROM BlueprintsToBuy 
 		WHERE buyerID = '$userID' AND Team_ID = (SELECT Team_ID FROM Team WHERE Team_Name = '$removeBuy')";
 		$thisValue = sqlQuery($SQL);
 		extract($thisValue);

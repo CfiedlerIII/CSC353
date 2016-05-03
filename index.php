@@ -100,10 +100,10 @@ background-color:#4CAF50;
 	$inputSort=$_POST["sort"];
 	$sort;
 	if($inputSort == "trans"){
-		$sort = "Transaction_ID";
+		$sort = "Buyer_ID";
 	}
 	else{
-		$sort = "Buyer_ID";
+		$sort = "Transaction_ID";
 	}
 	
 	$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
