@@ -144,6 +144,7 @@ background-color:#4CAF50;
 	$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
 	mysql_select_db("jgavin", $linkID);
 	if($userID!=null){
+		//display the user's balances for reference
 		$SQL = "SELECT Account_Balance,Available_Balance FROM Players WHERE Player_ID = ".$userID;
 		$allValues = mysql_query($SQL, $linkID);
 		if (!$allValues) {
@@ -161,7 +162,7 @@ background-color:#4CAF50;
 		echo "</TABLE>";
 	}
 
-
+	//format and display the form for Bblueprints purchasing
 	$SQL = "SELECT Team_Name FROM Team";
 	$allValues = mysql_query($SQL, $linkID);
 	if (!$allValues) {
@@ -191,12 +192,7 @@ background-color:#4CAF50;
 	if($checks==3 && $userID!=null){
 		//get the Team_ID instead of the Team_Name
 		$SQL = "SELECT Team_ID FROM Team WHERE Team_Name = '$teamBuy'";
-		$allValues = mysql_query($SQL, $linkID);
-		if (!$allValues) {
-			echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
-			exit;
-		}
-		$thisValue = mysql_fetch_assoc($allValues);
+		$thisValue = sqlQuery($SQL);
 		extract($thisValue);
 		$teamBuy = $Team_ID;
 
@@ -212,6 +208,7 @@ background-color:#4CAF50;
 		$leaveForLoop = false;
 		$sharesAquired = 0;
 		$sharesStillWanted = $numBuy;
+
 		for ($i=1; $i <= $totalrows; $i++){
 			$thisValue = mysql_fetch_assoc($allValues);
 			extract($thisValue);
@@ -219,26 +216,20 @@ background-color:#4CAF50;
 			if($sharesStillWanted>0){
 				echo $i;
 				if($Price<=$maxPrice){
-					//aquire the current balances of the buyer and seller
+					//define the seller's account balances
 					$SQL = "SELECT Account_Balance, Available_Balance FROM Players WHERE Player_ID = '$Seller_ID'";
-					$allValues = mysql_query($SQL, $linkID);
-					if (!$allValues) {
-						echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
-						exit;
-					}
-					$thisValue = mysql_fetch_assoc($allValues);
+					$thisValue = sqlQuery($SQL);
 					extract($thisValue);
+
 					$sellerInitBal = $Account_Balance;
 					$sellerInitAvail = $Available_Balance;
 
+
+					//define the buyer's balances
 					$SQL = "SELECT Account_Balance, Available_Balance FROM Players WHERE Player_ID = '$userID'";
-					$allValues = mysql_query($SQL, $linkID);
-					if (!$allValues) {
-						echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
-						exit;
-					}
-					$thisValue = mysql_fetch_assoc($allValues);
+					$thisValue = sqlQuery($SQL);
 					extract($thisValue);
+
 					$buyerInitBal = $Account_Balance;
 					$buyerInitAvail = $Available_Balance;
 					
@@ -247,90 +238,60 @@ background-color:#4CAF50;
 					$buyerTestBal = $buyerInitAvail;
 					for($i=0;$i<$sharesStillWanted;$i++){
 						$buyerTestBal = $buyerTestBal - $maxPrice;
-						if($buyerTestBal>0){
+						if($buyerTestBal>0.0){
 							$numSharesBuying++;
 						}
 					}
 					
-					
-					
 					$sellingSharesLeft = $Amount_Selling - $numSharesBuying;
 
 					//remove shares from the seller's inventory
-					if($Amount_Selling>$numSharesBuying){
+					if($numSharesBuying<$Amount_Selling){
 						$SQL = "UPDATE Blueprints_ForSale SET Amount_Selling = '$sellingSharesLeft' 
 						WHERE Seller_ID = '$Seller_ID' AND Team_ID = ".$teamBuy;
-						$allValues = mysql_query($SQL, $linkID);
-						if (!$allValues) {
-							echo "Could not successfully run query ($SQL) from DB: " . 
-							mysql_error();
-							exit;
-						}
+						sqlAction($SQL);
 					}
 					else{
 						//remove the blueprints from the seller's portfolio
 						$SQL = "DELETE FROM Blueprints_ForSale
 						WHERE Seller_ID = '$Seller_ID' AND Team_ID = '$teamBuy'";
-						$allValues = mysql_query($SQL, $linkID);
-						if (!$allValues) {
-							echo "Could not successfully run query ($SQL) from DB: " . 
-							mysql_error();
-							exit;
-						}
+						sqlAction($SQL);
+
 						$numSharesBuying = $Amount_Selling;
 
 						//remove pending marker from seller's portfolio
 						$SQL = "UPDATE Players_Team SET Pending = '' 
 						WHERE Team_ID = '$teamBuy' AND Player_ID = '$Seller_ID'";
-						$allValues = mysql_query($SQL, $linkID);
-						if (!$allValues) {
-							echo "Could not successfully run query ($SQL) from DB: " . 			
-							mysql_error();
-							exit;
-						}
+						sqlAction($SQL);
 					}
 					
-					//get amount owned by seller
+					//get number of shares owned by seller
 					$SQL = "SELECT NumOfBlueprints FROM Players_Team 
 					WHERE Team_ID = ".$teamBuy." AND Player_ID = ".$Seller_ID;
-					$allValues = mysql_query($SQL, $linkID);
-					if (!$allValues) {
-						echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
-						exit;
-					}
-					$thisValue = mysql_fetch_assoc($allValues);
+					$thisValue = sqlQuery($SQL);
 					extract($thisValue);
+
+					//define the final number of shares for the seller
 					$finalNumSeller = $NumOfBlueprints - $numSharesBuying;
 					
+					//remove blueprints from the seller's portfolio
 					if($finalNumSeller==0){
 						$SQL = "DELETE FROM Players_Team
 						WHERE Player_ID = '$Seller_ID' AND Team_ID = '$teamBuy'";
-						$allValues = mysql_query($SQL, $linkID);
-						if (!$allValues) {
-							echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
-							exit;
-						}
+						sqlAction($SQL);
 					}
 					else{
 						$SQL = "UPDATE Players_Team SET NumOfBlueprints = '$finalNumSeller' 
 						WHERE Player_ID = '$Seller_ID' AND Team_ID = '$teamBuy'";
-						$allValues = mysql_query($SQL, $linkID);
-						if (!$allValues) {
-							echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
-							exit;
-						}
+						sqlAction($SQL);
 					}
 					
 
 					//get the number of shares of that team the buyer owns
 					$SQL = "SELECT NumOfBlueprints FROM Players_Team
 					WHERE Team_ID = '$teamBuy' AND Player_ID = '$userID'";
-					$allValues = mysql_query($SQL, $linkID);
-					if (!$allValues) {
-						echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
-						exit;
-					}
-					$thisValue = mysql_fetch_assoc($allValues);
+					$thisValue = sqlQuery($SQL);
+
 					if(empty($thisValue)){
 						$buyerInitShares = 0;
 					}
@@ -338,6 +299,8 @@ background-color:#4CAF50;
 						extract($thisValue);
 						$buyerInitShares = $NumOfBlueprints;
 					}
+
+					//define the final number of shares for the purchaser
 					$buyerFinalShares = $buyerInitShares + $numSharesBuying;
 
 					//add the purchased shares to the buyer's inventory
@@ -345,24 +308,14 @@ background-color:#4CAF50;
 						$SQL = "INSERT INTO Players_Team 
 						(NumOfBlueprints,Player_ID,Team_ID,Pending)
 						VALUES('$numSharesBuying','$userID','$teamBuy','')";
-						$allValues = mysql_query($SQL, $linkID);
-						if (!$allValues) {
-							echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
-							exit;
-						}
+						sqlAction($SQL);
 					}
 					else{
 						$SQL = "UPDATE Players_Team 
 						SET NumOfBlueprints = '$buyerFinalShares'
 						WHERE Team_ID = '$teamBuy' AND Player_ID = '$userID'";
-						$allValues = mysql_query($SQL, $linkID);
-						if (!$allValues) {
-							echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
-							exit;
-						}
+						sqlAction($SQL);
 					}
-					
-					
 					
 					//update both account balances and update transaction table
 					$sellerFinalBal = $sellerInitBal + ($maxPrice * $numSharesBuying);
@@ -374,28 +327,19 @@ background-color:#4CAF50;
 					SET Account_Balance = ".$sellerFinalBal.",
 					Available_Balance = ".$sellerFinalAvail."
 					WHERE Player_ID = ".$Seller_ID;
-					$allValues = mysql_query($SQL, $linkID);
-					if (!$allValues) {
-						echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
-						exit;
-					}
+					sqlAction($SQL);
+
 					$SQL = "UPDATE Players 
 					SET Account_Balance = ".$buyerFinalBal.",
 					Available_Balance = ".$buyerFinalAvail."
 					WHERE Player_ID = ".$userID;
-					$allValues = mysql_query($SQL, $linkID);
-					if (!$allValues) {
-						echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
-						exit;
-					}
+					sqlAction($SQL);
+
 					$SQL = "INSERT INTO Transaction
 					(Transaction_ID,Value,QuantitySold,Team_ID,Buyer_ID,Seller_ID)
 					VALUES(null,".$maxPrice.",".$numSharesBuying.",".$teamBuy.",".$userID.",".$Seller_ID.")";
-					$allValues = mysql_query($SQL, $linkID);
-					if (!$allValues) {
-						echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
-						exit;
-					}
+					sqlAction($SQL);
+
 					$sharesAquired = $sharesAquired + $numSharesBuying;
 					$sharesStillWanted = $numBuy - $sharesAquired;
 				}
@@ -412,37 +356,26 @@ background-color:#4CAF50;
 
 		//if you still want to buy more shares
 		if($sharesStillWanted>0){
+			//insert a new pending buy into BlueprintsToBuy
 			$SQL = "INSERT INTO BlueprintsToBuy
 			(buyID,buyerID,Price,Amount_Buying,Team_ID)
 			VALUES(null,'$userID','$maxPrice','$sharesStillWanted','$teamBuy')";
-			$allValues = mysql_query($SQL, $linkID);
-			if (!$allValues) {
-				echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
-				exit;
-			}
-			$totalCost = $maxPrice * $sharesStillWanted;
+			sqlAction($SQL);
 			
 			$SQL = "SELECT Available_Balance FROM Players WHERE Player_ID = '$userID'";
-			$allValues = mysql_query($SQL, $linkID);
-			if (!$allValues) {
-				echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
-				exit;
-			}
-			$thisValue = mysql_fetch_assoc($allValues);
+			$thisValue = sqlQuery($SQL);
 			extract($thisValue);
-			$availBalance = $Available_Balance - $totalCost;
+
+			//new balance available is decremented by the total cost of the pending buy
+			$availBalance = $Available_Balance - ($maxPrice * $sharesStillWanted);
 			
 			$SQL = "UPDATE Players SET Available_Balance = ".$availBalance." 
 			WHERE Player_ID = '$userID'";
-			$allValues = mysql_query($SQL, $linkID);
-			if (!$allValues) {
-				echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
-				exit;
-			}
+			sqlAction($SQL);
 		}
 	}
 	
-	
+	//display the Blueprints_ForSale table
 	if($searchTerm==""){
 		$SQL = "SELECT te.Team_Name, bs.Amount_Selling, bs.Price 
 		FROM Players p, Team te, Blueprints_ForSale bs 
@@ -461,25 +394,29 @@ background-color:#4CAF50;
 	}
 	echo "<TABLE BORDER=1 CELLPADDING=8>";
 	echo "<TR><TD><B>Team Name</B></TD><TD><B>Amount Selling</B></TD><TD><B>Price</B></TD>";
-		$totalrows = mysql_num_rows($allValues);
-		for ($i=1; $i <= $totalrows; $i++){
-			$thisValue = mysql_fetch_assoc($allValues);
-			extract($thisValue);
-			echo "<TR>";
-			echo "<TD>$Team_Name</TD>";
-			echo "<TD>$Amount_Selling</TD>";
-			echo "<TD>\$".round($Price,2,PHP_ROUND_HALF_DOWN)."</TD>";
-			echo "</TR>";
-		}
-		echo "</TABLE>";
+	$totalrows = mysql_num_rows($allValues);
+	for ($i=1; $i <= $totalrows; $i++){
+		$thisValue = mysql_fetch_assoc($allValues);
+		extract($thisValue);
+		echo "<TR>";
+		echo "<TD>$Team_Name</TD>";
+		echo "<TD>$Amount_Selling</TD>";
+		echo "<TD>\$".round($Price,2,PHP_ROUND_HALF_DOWN)."</TD>";
+		echo "</TR>";
+	}
+	echo "</TABLE>";
+
+
 	mysql_close($linkID);
 ?>
 
 <h3><font color=#0099cc>Buy Requests:</font></h3>
+
 <?php
 	$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
 	mysql_select_db("jgavin", $linkID);
 	
+	//format and display the form for removing pending buys
 	$SQL = "SELECT Team_Name FROM Team t,BlueprintsToBuy b
 	WHERE t.Team_ID = b.Team_ID
 	AND buyerID = '$userID'";
@@ -503,73 +440,82 @@ background-color:#4CAF50;
     </form>';
 	echo $select;
 
-	
-		$SQL = "SELECT te.Team_Name, bb.Amount_Buying, bb.Price
-		FROM Players p, Team te, BlueprintsToBuy bb
-		Where p.Player_ID = bb.buyerID and te.Team_ID = bb.Team_ID";
+	//display the BlueprintsToBuy table	
+	$SQL = "SELECT te.Team_Name, bb.Amount_Buying, bb.Price
+	FROM Players p, Team te, BlueprintsToBuy bb
+	Where p.Player_ID = bb.buyerID and te.Team_ID = bb.Team_ID";
 	$allValues = mysql_query($SQL, $linkID);
 	if (!$allValues) {
 		echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
 		exit;
 	}
-  echo "<TABLE BORDER=1 CELLPADDING=8>";
+    echo "<TABLE BORDER=1 CELLPADDING=8>";
 	echo "<TR><TD><B>Team Name</B></TD><TD><B>Amount Buying</B></TD><TD><B>Price</B></TD>";
-		$totalrows = mysql_num_rows($allValues);
-		for ($i=1; $i <= $totalrows; $i++){
-			$thisValue = mysql_fetch_assoc($allValues);
-			extract($thisValue);
-			echo "<TR>";
-			echo "<TD>$Team_Name</TD>";
-			echo "<TD>$Amount_Buying</TD>";
-			echo "<TD>\$".round($Price,2,PHP_ROUND_HALF_DOWN)."</TD>";
-			echo "</TR>";
-		}
-		echo "</TABLE>";
+	$totalrows = mysql_num_rows($allValues);
+	for ($i=1; $i <= $totalrows; $i++){
+		$thisValue = mysql_fetch_assoc($allValues);
+		extract($thisValue);
+		echo "<TR>";
+		echo "<TD>$Team_Name</TD>";
+		echo "<TD>$Amount_Buying</TD>";
+		echo "<TD>\$".round($Price,2,PHP_ROUND_HALF_DOWN)."</TD>";
+		echo "</TR>";
+	}
+	echo "</TABLE>";
+	mysql_close($linkID);
+
+
 		
+	function removeBuying($removeBuy,$userID){
+		//aquire the user's available balance
+		$SQL = "SELECT Available_Balance FROM Players WHERE Player_ID = '$userID'";
+		$thisValue = sqlQuery($SQL);
+		extract($thisValue);
+
+		$availBalance = $Available_Balance;
+		
+		//aquire the rows from BlueprintsToBuy
+		$SQL = "SELECT Price, Amount_Buying FROM BlueprintsToBuy 
+		WHERE buyerID = '$userID' AND Team_ID = (SELECT Team_ID FROM Team WHERE Team_Name = '$removeBuy')";
+		$thisValue = sqlQuery($SQL);
+		extract($thisValue);
+
+		$totalCost = $Price * $Amount_Buying;
+		$availBalance = $availBalance + $totalCost;
+		
+		//update the user's available balance
+		$SQL = "UPDATE Players SET Available_Balance = ".$availBalance." 
+		WHERE Player_ID = '$userID'";
+		sqlAction($SQL);
+
+		//remove the user's pending buy
+		$SQL = "DELETE FROM BlueprintsToBuy WHERE buyerID = '$userID' 
+		AND Team_ID = (SELECT Team_ID FROM Team WHERE Team_Name = '$removeBuy')";
+		sqlAction($SQL);
+	}
+
+	function sqlQuery($SQL){
+		$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
+		mysql_select_db("jgavin", $linkID);
+		$allValues = mysql_query($SQL, $linkID);
+		if (!$allValues) {
+			echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+			exit;
+		}
+		$thisValue = mysql_fetch_assoc($allValues);
 		mysql_close($linkID);
-		
-		function removeBuying($removeBuy,$userID){
-			$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
-			mysql_select_db("jgavin", $linkID);
-			$SQL = "SELECT Available_Balance FROM Players WHERE Player_ID = '$userID'";
-			$allValues = mysql_query($SQL, $linkID);
-			if (!$allValues) {
-				echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
-				exit;
-			}
-			$thisValue = mysql_fetch_assoc($allValues);
-			extract($thisValue);
-			$availBalance = $Available_Balance;
-			
-			$SQL = "SELECT Price, Amount_Buying FROM BlueprintsToBuy 
-			WHERE buyerID = '$userID' AND Team_ID = (SELECT Team_ID FROM Team WHERE Team_Name = '$removeBuy')";
-			$allValues = mysql_query($SQL, $linkID);
-			if (!$allValues) {
-				echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
-				exit;
-			}
-			$thisValue = mysql_fetch_assoc($allValues);
-			extract($thisValue);
-			$totalCost = $Price * $Amount_Buying;
-			$availBalance = $availBalance + $totalCost;
-			
-			$SQL = "UPDATE Players SET Available_Balance = ".$availBalance." 
-			WHERE Player_ID = '$userID'";
-			$allValues = mysql_query($SQL, $linkID);
-			if (!$allValues) {
-				echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
-				exit;
-			}
-			
-			$SQL = "DELETE FROM BlueprintsToBuy WHERE buyerID = '$userID' 
-			AND Team_ID = (SELECT Team_ID FROM Team WHERE Team_Name = '$removeBuy')";
-			$allValues = mysql_query($SQL, $linkID);
-			if (!$allValues) {
-				echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
-				exit;
-			}
-			mysql_close($linkID);
+		return $thisValue;
+	}
+	function sqlAction($SQL){
+		$linkID = mysql_connect("localhost","jgavin","Furmanlax17");
+		mysql_select_db("jgavin", $linkID);
+		$allValues = mysql_query($SQL, $linkID);
+		if (!$allValues) {
+			echo "Could not successfully run query ($SQL) from DB: " . mysql_error();
+			exit;
 		}
+		mysql_close($linkID);
+	}
 ?>
 </div>
 
